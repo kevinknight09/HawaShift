@@ -1,0 +1,357 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#102321" />
+    <meta
+      name="description"
+      content="A practical, family-first air plan for today. See when to go out, how to improve indoor air, and what each choice changes."
+    />
+    <title>HawaShift — a clearer plan for today</title>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="/styles.css" />
+    <script type="module" src="/app.js"></script>
+  </head>
+  <body>
+    <a class="skip-link" href="#main-content">Skip to today’s plan</a>
+    <header class="topbar">
+      <a class="brand" href="#today" aria-label="HawaShift home">
+        <span class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 36 36" fill="none">
+            <path d="M6 20.5c4.2-7.5 10.2-10.6 15-8.2 3.6 1.8 2.5 6.1-.2 6.7-2.2.5-3.1-1.2-1.5-2.3" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/>
+            <path d="M7 26c5.6-4.1 11.1-4.8 14.7-2.6 2.8 1.8 5.7 2.1 8.3.2" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/>
+            <circle cx="27.5" cy="11" r="2.5" fill="currentColor"/>
+          </svg>
+        </span>
+        <span class="brand-word">hawa<span>shift</span></span>
+      </a>
+      <nav class="main-nav" aria-label="Main navigation">
+        <a class="active" href="#today">Today</a>
+        <a href="#plan">Family plan</a>
+        <a href="#home-air">At home</a>
+        <a href="#community">Together</a>
+      </nav>
+      <div class="top-actions">
+        <span class="privacy-pill"><span class="privacy-dot"></span> Private by default</span>
+        <button class="icon-button" id="menuButton" type="button" aria-label="Open menu" aria-expanded="false">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16" /></svg>
+        </button>
+      </div>
+    </header>
+
+    <main id="main-content">
+      <section class="hero-section page-wrap" id="today">
+        <div class="hero-copy">
+          <div class="eyebrow"><span class="eyebrow-dot"></span> A little more breathing room, one choice at a time</div>
+          <h1>Make today<br /><em>work for your air.</em></h1>
+          <p class="hero-lede">
+            Smog changes by the hour. Your family’s day does too. HawaShift brings the two together and suggests small changes that fit real life.
+          </p>
+          <div class="hero-cta-row">
+            <a class="button button-primary" href="#plan">
+              Build our day plan
+              <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4 10h11M10 5l5 5-5 5" /></svg>
+            </a>
+            <button class="button button-quiet" id="refreshAir" type="button">
+              <svg class="refresh-icon" viewBox="0 0 20 20" aria-hidden="true"><path d="M16.5 7A6.5 6.5 0 0 0 5.3 4.2L3.5 6M3.5 6V2.8M3.5 6h3.2M3.5 13a6.5 6.5 0 0 0 11.2 2.8l1.8-1.8m0 0v3.2m0-3.2h-3.2" /></svg>
+              Refresh local forecast
+            </button>
+          </div>
+          <div class="hero-assurances">
+            <span><svg viewBox="0 0 16 16" aria-hidden="true"><path d="m3 8 3 3 7-7" /></svg> No account needed</span>
+            <span><svg viewBox="0 0 16 16" aria-hidden="true"><path d="m3 8 3 3 7-7" /></svg> Your profile stays in this session</span>
+          </div>
+        </div>
+
+        <article class="air-card" aria-labelledby="air-card-title">
+          <div class="air-card-top">
+            <div>
+              <p class="eyebrow eyebrow-light">TODAY’S OUTDOOR AIR</p>
+              <h2 id="air-card-title"><span id="cityName">New Delhi</span><span class="city-country" id="cityCountry">Delhi, India</span></h2>
+            </div>
+            <span class="forecast-badge"><span class="pulse-dot"></span><span id="sourceBadge">DEMO FORECAST</span></span>
+          </div>
+          <div class="air-current">
+            <div class="air-reading">
+              <span class="reading-label">PM₂.₅ model estimate</span>
+              <div class="reading-number"><strong id="pmValue">116</strong><span>µg/m³</span></div>
+              <span class="air-level" id="pmLevel"><span class="level-dot"></span> Elevated</span>
+            </div>
+            <div class="air-orbit" aria-hidden="true">
+              <div class="orbit orbit-one"></div><div class="orbit orbit-two"></div>
+              <div class="orbit-core"><span id="airTrend">↘</span><small>next<br />window</small></div>
+            </div>
+          </div>
+          <div class="chart-head">
+            <span>PM₂.₅ through the day</span>
+            <span class="chart-unit">µg/m³ · lower is better</span>
+          </div>
+          <div class="air-chart" id="airChart" role="img" aria-label="Illustrative PM2.5 forecast, lower values indicate less particulate pollution">
+            <div class="chart-grid"><span></span><span></span><span></span></div>
+            <div class="chart-bars" id="airBars"></div>
+          </div>
+          <div class="chart-times" aria-hidden="true"><span>12 AM</span><span>6 AM</span><span>12 PM</span><span>6 PM</span></div>
+          <div class="air-card-foot">
+            <span class="freshness" id="forecastStamp">Illustrative sample · not live data</span>
+            <a class="source-link" href="https://open-meteo.com/en/docs/air-quality-api" target="_blank" rel="noreferrer">PM₂.₅ model · not official AQI ↗</a>
+          </div>
+        </article>
+      </section>
+
+      <section class="signal-strip page-wrap" aria-label="Today's outlook">
+        <div class="signal-intro">
+          <span class="signal-icon signal-icon-sun" aria-hidden="true">◒</span>
+          <div><strong id="bestTimeLabel">A lower period may arrive later</strong><span id="bestTimeDetail">We’ll compare the forecast with your schedule.</span></div>
+        </div>
+        <div class="signal-divider"></div>
+        <div class="signal-item"><span class="signal-kicker">YOUR HOUSEHOLD</span><strong><span id="householdCount">4</span> people, one shared plan</strong></div>
+        <div class="signal-item"><span class="signal-kicker">PLAN STYLE</span><strong id="planStyle">Practical, low-cost changes</strong></div>
+        <button class="signal-edit" type="button" data-scroll-to="profile">Edit details <span aria-hidden="true">↗</span></button>
+      </section>
+
+      <section class="section page-wrap timeline-section" aria-labelledby="timeline-title">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">NEXT 24 HOURS · CITY LOCAL TIME</p>
+            <h2 id="timeline-title">The day has <em>better moments.</em></h2>
+          </div>
+          <p class="section-note">The number is a forecast, not a street sensor. Use the quieter window for activities you can move; fixed commitments stay fixed.</p>
+        </div>
+        <div class="timeline-panel">
+          <div class="timeline-legend">
+            <span><i class="legend-dot legend-high"></i> More PM₂.₅ in this model</span>
+            <span><i class="legend-dot legend-low"></i> Lower modeled period</span>
+            <span class="legend-right" id="timelineSource">Demo values · illustrative</span>
+          </div>
+          <div class="timeline" id="timeline"></div>
+          <div class="schedule-ribbon">
+            <div class="ribbon-title"><span class="ribbon-mark" aria-hidden="true">✦</span> YOUR DAY, OVERLAID</div>
+            <div class="ribbon-event"><span class="event-line event-school"></span><strong>School run</strong><span>Fixed · 8:15 AM</span></div>
+            <div class="ribbon-event"><span class="event-line event-walk"></span><strong>Family walk</strong><span id="walkSchedule">Flexible · 7:00 AM</span></div>
+            <div class="ribbon-event"><span class="event-line event-commute"></span><strong>Work commute</strong><span>One trip</span></div>
+            <button class="text-link" data-scroll-to="profile" type="button">Adjust schedule <span aria-hidden="true">↗</span></button>
+          </div>
+        </div>
+        <p class="source-note"><span class="note-icon">i</span> Forecasts can miss local spikes. A lower forecast period is not a guarantee of safe air.</p>
+      </section>
+
+      <section class="section page-wrap plan-section" id="plan" aria-labelledby="plan-title">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">MADE AROUND YOUR REAL DAY</p>
+            <h2 id="plan-title">A family plan, <em>not a lecture.</em></h2>
+          </div>
+          <p class="section-note">Tell us what cannot move and what you can spend. The plan works around your commitments.</p>
+        </div>
+        <div class="plan-layout">
+          <form class="profile-card" id="profileForm">
+            <div class="profile-card-head">
+              <div class="profile-avatar" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><path d="M16 20v-1.4a3.6 3.6 0 0 0-3.6-3.6H6.6A3.6 3.6 0 0 0 3 18.6V20M9.5 11.4a3.7 3.7 0 1 0 0-7.4 3.7 3.7 0 0 0 0 7.4ZM16 4.4a3.7 3.7 0 0 1 0 7.1M17.5 15h.9a3.6 3.6 0 0 1 3.6 3.6V20" /></svg>
+              </div>
+              <div><span class="card-kicker">YOUR HOUSEHOLD</span><h3>Today’s setup</h3></div>
+              <span class="session-label"><span></span> Session only</span>
+            </div>
+            <div class="form-grid">
+              <label class="field field-wide">
+                <span>City or nearby area</span>
+                <div class="input-icon-wrap"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M16 8.3c0 4.3-6 9-6 9s-6-4.7-6-9a6 6 0 1 1 12 0Z"/><circle cx="10" cy="8.1" r="2"/></svg><input id="cityInput" name="city" value="New Delhi" autocomplete="address-level2" maxlength="60" /></div>
+              </label>
+              <label class="field">
+                <span>People at home</span>
+                <select id="householdSize" name="householdSize">
+                  <option value="2">2 people</option><option value="3">3 people</option><option value="4" selected>4 people</option><option value="5">5 people</option><option value="6">6+ people</option>
+                </select>
+              </label>
+              <label class="field">
+                <span>Indoor air budget</span>
+                <select id="budget" name="budget">
+                  <option value="zero" selected>₹0 right now</option><option value="low">Up to ₹500</option><option value="mid">₹500–₹2,000</option><option value="flex">Flexible</option>
+                </select>
+              </label>
+              <fieldset class="field field-wide sensitivities">
+                <legend>Anyone who needs extra care on poor-air days?</legend>
+                <div class="choice-chips">
+                  <label class="choice-chip"><input type="checkbox" id="hasChildren" checked /><span>Children</span></label>
+                  <label class="choice-chip"><input type="checkbox" id="hasOlderAdult" checked /><span>Older adult</span></label>
+                  <label class="choice-chip"><input type="checkbox" id="hasRespiratory" /><span>Breathing sensitivity</span></label>
+                </div>
+              </fieldset>
+              <label class="field">
+                <span>Flexible walk usually starts</span>
+                <select id="walkTime" name="walkTime">
+                  <option value="6">6:00 AM</option><option value="7" selected>7:00 AM</option><option value="8">8:00 AM</option><option value="18">6:00 PM</option>
+                </select>
+              </label>
+              <label class="field">
+                <span>Main commute</span>
+                <select id="commuteMode" name="commuteMode">
+                  <option value="car" selected>Car</option><option value="scooter">Two-wheeler</option><option value="bus">Bus</option><option value="metro">Metro</option><option value="walk">Walk or cycle</option><option value="remote">Mostly at home</option>
+                </select>
+              </label>
+              <label class="field">
+                <span>One-way commute distance</span>
+                <div class="input-icon-wrap"><input id="commuteKm" name="commuteKm" type="number" min="0" max="80" step="0.5" value="6" /><span class="distance-unit">km</span></div>
+              </label>
+              <label class="toggle-row field-wide">
+                <input type="checkbox" id="schoolFixed" checked />
+                <span class="toggle-ui" aria-hidden="true"></span>
+                <span><strong>School drop-off cannot move</strong><small>We’ll keep the 8:15 AM commitment in place.</small></span>
+              </label>
+            </div>
+            <div class="privacy-disclosure">
+              <span class="privacy-lock" aria-hidden="true"><svg viewBox="0 0 20 20"><rect x="4.5" y="8.5" width="11" height="8" rx="2"/><path d="M7 8.5V6a3 3 0 0 1 6 0v2.5"/></svg></span>
+              <p>This app does not store your setup. Building a plan sends your city, forecast, schedule, budget, and extra-care selections to this server for calculation. With consent, those details and your follow-up questions also go to Google’s Gemini API. Don’t enter names or diagnoses; Google’s API data terms apply.</p>
+            </div>
+            <label class="ai-consent">
+              <input type="checkbox" id="aiConsent" />
+              <span class="consent-check" aria-hidden="true"></span>
+              <span>Send my setup and questions to Gemini for tailored help</span>
+            </label>
+            <button class="button button-dark button-full" type="submit" id="planButton">
+              <span class="button-label">Build our day plan</span>
+              <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4 10h11M10 5l5 5-5 5" /></svg>
+            </button>
+            <p class="form-status" id="planStatus" role="status" aria-live="polite">Ready when you are. Your commitments stay in view.</p>
+          </form>
+
+          <div class="plan-output" aria-live="polite">
+            <div class="plan-output-head">
+              <div>
+                <span class="card-kicker">TODAY’S PLAN</span>
+                <h3 id="planSummary">Small shifts. A day that still feels like yours.</h3>
+              </div>
+              <span class="ai-mode-pill" id="aiMode"><span class="ai-spark">✦</span> Local guide</span>
+            </div>
+            <p class="plan-intro" id="planIntro">Build a plan to see a lower-forecast window, a fixed school-run adjustment, and indoor steps that fit your budget.</p>
+            <div class="action-list" id="actionList">
+              <article class="action-card action-card-featured">
+                <div class="action-time"><span class="action-icon icon-clock">◷</span><span>FLEXIBLE ROUTINE</span></div>
+                <div class="action-body"><h4>Find a calmer hour for the family walk</h4><p>We’ll compare the model with your usual start time. If no useful window appears, we’ll suggest an indoor alternative instead.</p><div class="action-meta"><span class="meta-tag">No cost</span><span class="meta-tag meta-muted">Forecast-based</span></div></div>
+                <span class="action-impact">READY TO PLAN</span>
+              </article>
+              <article class="action-card">
+                <div class="action-time"><span class="action-icon icon-route">⌁</span><span>FIXED COMMITMENT</span></div>
+                <div class="action-body"><h4>Keep the school run; reduce the waiting</h4><p>Shorten outdoor queue time where practical and avoid leaving an engine idling at pickup.</p><div class="action-meta"><span class="meta-tag">Fits your schedule</span></div></div>
+                <span class="action-impact impact-neutral">PRACTICAL</span>
+              </article>
+              <article class="action-card">
+                <div class="action-time"><span class="action-icon icon-home">⌂</span><span>AT HOME</span></div>
+                <div class="action-body"><h4>Start with the room, not a shopping list</h4><p>We’ll put free source-control steps first, then show an air-cleaner option only if it fits your budget.</p><div class="action-meta"><span class="meta-tag">₹0 first</span></div></div>
+                <span class="action-impact impact-home">INDOORS</span>
+              </article>
+            </div>
+            <div class="plan-footnote"><span class="footnote-star">✳</span><span>Recommendations support everyday planning. They are not medical advice and never label a time or place “safe.”</span></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="impact-section page-wrap" aria-labelledby="impact-title">
+        <div class="impact-copy">
+          <p class="eyebrow eyebrow-light">THE “WHY” BEHIND THE PLAN</p>
+          <h2 id="impact-title">See what one<br /><em>small shift changes.</em></h2>
+          <p>We compare the forecast at your usual walk time with the lowest modeled daytime window. It’s an exposure proxy for that activity, not a prediction about anyone’s health.</p>
+          <button class="text-link text-link-light" id="methodButton" type="button" aria-expanded="false" aria-controls="methodDetails">Show how we calculate it <span aria-hidden="true">+</span></button>
+        </div>
+        <div class="impact-results">
+          <div class="impact-result">
+            <span class="impact-label">OUTDOOR WALK</span>
+            <strong id="impactExposure">—<small>%</small></strong>
+            <span id="impactExposureLabel">lower modeled PM₂.₅ exposure proxy</span>
+          </div>
+          <div class="impact-result">
+            <span class="impact-label">COMMUTE CHOICE · CO₂</span>
+            <strong id="impactCarbon">—<small>kg</small></strong>
+            <span id="impactCarbonLabel">estimated CO₂ difference per trip</span>
+          </div>
+          <div class="impact-result impact-result-aside">
+            <span class="impact-label">ASSUMPTION CHECK</span>
+            <p id="impactFoot">Numbers appear after the forecast and your choices are known. No benefit is guessed by Gemini.</p>
+          </div>
+        </div>
+        <div class="method-details" id="methodDetails" hidden>
+          <strong>What the estimates mean</strong>
+          <p id="methodText">Walk comparison = modeled PM₂.₅ at the next occurrence of your usual walk time versus the lowest mean across three hourly values spanning two daytime hours on that same local date. We assume 20 minutes outside. It does not estimate inhaled dose and excludes indoor infiltration, breathing rate, route differences, and personal health.</p>
+          <p>Commute estimates use Government of India vehicle emission factors and explicit default occupancy assumptions. A positive number means estimated CO₂ saved; a negative number means added. These are directional, not a personal carbon audit. <a href="https://rb.indianrailways.gov.in/uploads/directorate/works/pdf/2023/13_12_2023-%20Proforma%20for%20submission%20of%20Detailed%20Project%20Report.pdf" target="_blank" rel="noreferrer">Open the source factors ↗</a></p>
+        </div>
+      </section>
+
+      <section class="section page-wrap home-section" id="home-air" aria-labelledby="home-title">
+        <div class="section-heading">
+          <div><p class="eyebrow">A BREATHING SPACE AT HOME</p><h2 id="home-title">Make the inside <em>work harder.</em></h2></div>
+          <p class="section-note">Start with what costs nothing. Add equipment only when it makes sense for your room and budget.</p>
+        </div>
+        <div class="home-grid">
+          <article class="home-card home-card-free">
+            <div class="home-card-top"><span class="home-number">01</span><span class="home-cost cost-free">FREE</span></div>
+            <div class="home-illustration illustration-source" aria-hidden="true"><span class="sun-disc"></span><span class="window-line"></span><span class="air-stroke"></span></div>
+            <h3>Reduce indoor sources</h3>
+            <p>Skip incense and indoor smoking. Damp-dust instead of dry sweeping; use an outdoor-vented kitchen exhaust when cooking.</p>
+            <div class="home-card-foot"><span>Good first move</span><span aria-hidden="true">✦</span></div>
+          </article>
+          <article class="home-card home-card-low">
+            <div class="home-card-top"><span class="home-number">02</span><span class="home-cost cost-low">UNDER ₹500</span></div>
+            <div class="home-illustration illustration-filter" aria-hidden="true"><span class="filter-box"></span><span class="filter-lines"></span><span class="filter-spark">✦</span></div>
+            <h3>Keep the bedroom calmer</h3>
+            <p>Close gaps only where it won’t compromise required ventilation. Keep a clean, suitable filter fitted to existing equipment.</p>
+            <div class="home-card-foot"><span id="budgetNudge">Fits your current budget</span><span aria-hidden="true">✦</span></div>
+          </article>
+          <article class="home-card home-card-invest">
+            <div class="home-card-top"><span class="home-number">03</span><span class="home-cost cost-invest">IF BUDGET ALLOWS</span></div>
+            <div class="home-illustration illustration-room" aria-hidden="true"><span class="room-window"></span><span class="room-purifier"></span><span class="room-air"></span></div>
+            <h3>Size a purifier to the room</h3>
+            <p>If you buy one, check clean-air delivery rate for your room and the replacement-filter cost—not just the product price.</p>
+            <div class="home-card-foot"><span>Compare before buying</span><span aria-hidden="true">↗</span></div>
+          </article>
+        </div>
+        <div class="vent-note"><span class="vent-icon" aria-hidden="true">↻</span><p><strong>Open windows only when outdoor air is better.</strong> Ventilation helps with indoor pollutants, but it can also bring outdoor particles in. Check local conditions first.</p><a href="https://www.epa.gov/indoor-air-quality-iaq/biological-contaminants-and-indoor-air-quality" target="_blank" rel="noreferrer">Indoor air guidance <span aria-hidden="true">↗</span></a></div>
+      </section>
+
+      <section class="community-section page-wrap" id="community" aria-labelledby="community-title">
+        <div class="community-visual" aria-hidden="true">
+          <div class="community-sun"></div>
+          <div class="building building-one"></div><div class="building building-two"></div><div class="building building-three"></div>
+          <div class="street-line"></div>
+          <div class="person person-one"></div><div class="person person-two"></div><div class="person person-three"></div>
+          <span class="community-cloud cloud-one"></span><span class="community-cloud cloud-two"></span>
+        </div>
+        <div class="community-copy">
+          <p class="eyebrow">BETTER AIR IS A TEAM SPORT</p>
+          <h2 id="community-title">A small shift<br /><em>travels further together.</em></h2>
+          <p>Try a school-gate no-idling pledge or combine a neighbor’s errand with yours. We won’t invent neighborhood totals; shared impact appears only when people actually join.</p>
+          <div class="community-actions">
+            <button class="button button-dark" id="copyPledge" type="button">Copy a neighbor invite <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4 10h11M10 5l5 5-5 5" /></svg></button>
+            <span class="community-status" id="communityStatus" role="status" aria-live="polite">No account. No public household list.</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="section page-wrap assistant-section" aria-labelledby="assistant-title">
+        <div class="assistant-heading">
+          <div class="assistant-orb" aria-hidden="true">✦</div>
+          <div><p class="eyebrow">ASK ABOUT YOUR PLAN</p><h2 id="assistant-title">What can’t change today?</h2><p>Tell HawaShift one constraint and it will explain an alternative using this plan’s data.</p></div>
+        </div>
+        <form id="refineForm" class="assistant-form">
+          <label class="sr-only" for="refineQuestion">Ask a question about the plan</label>
+          <input id="refineQuestion" maxlength="280" placeholder="For example: The school run is fixed and we have no purifier budget…" />
+          <button type="submit" id="refineButton" aria-label="Ask HawaShift"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4 10h11M10 5l5 5-5 5" /></svg></button>
+        </form>
+        <p class="assistant-result" id="refineResult" role="status" aria-live="polite">AI answers are grounded in your plan. No diagnosis, invented measurements, or medical promises.</p>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-top page-wrap">
+        <a class="brand brand-footer" href="#today"><span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 36 36" fill="none"><path d="M6 20.5c4.2-7.5 10.2-10.6 15-8.2 3.6 1.8 2.5 6.1-.2 6.7-2.2.5-3.1-1.2-1.5-2.3" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/><path d="M7 26c5.6-4.1 11.1-4.8 14.7-2.6 2.8 1.8 5.7 2.1 8.3.2" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/><circle cx="27.5" cy="11" r="2.5" fill="currentColor"/></svg></span><span class="brand-word">hawa<span>shift</span></span></a>
+        <p>Plans for the air we have. Choices for the future we want.</p>
+        <a class="back-top" href="#today">Back to today ↑</a>
+      </div>
+      <div class="footer-bottom page-wrap">
+        <span>Forecast source: <a href="https://open-meteo.com/en/docs/air-quality-api" target="_blank" rel="noreferrer">Open-Meteo Air Quality</a> when live data is loaded.</span>
+        <span>Estimates are directional. This tool does not provide medical advice.</span>
+      </div>
+    </footer>
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  </body>
+</html>
