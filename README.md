@@ -4,22 +4,41 @@
 
 ## Run locally
 
-Requirements: Node.js 20.11 or newer. There are no third-party runtime packages.
+Requirements: Node.js 20.11 or newer.
 
 ```powershell
+npm install
 Copy-Item .env.example .env
 # Optional: add a Google Gemini API key to .env to enable consent-based AI wording and follow-up answers.
 npm run dev
 ```
 
-Open [http://localhost:4173](http://localhost:4173). Without a Gemini key, the complete local planning guide still works. The first screen uses clearly labeled illustrative sample data; press **Refresh local forecast** to load the selected city’s regional PM₂.₅ forecast.
+Open [http://localhost:4173](http://localhost:4173). Without a Gemini key, the complete local planning guide still works. On load, the app checks for your location (or lets you click **Enter my location manually** to pick from major Indian cities or type any city) to fetch your regional PM₂.₅ forecast—no demo forecast is shown.
 
 For a production start, use `npm start`. The Gemini key must stay on the server and must never be placed in client code. See [`.env.example`](.env.example).
+
+## Verify and test
+
+```powershell
+npm run check
+npm test
+```
+
+- `npm run check` runs Node syntax validation across all server, client, and Vercel handler files.
+- `npm test` runs the `node --test` suite (`21` unit, API, and Vercel serverless handler tests).
+
+## Deploy on Vercel
+
+[`vercel.json`](vercel.json) serves `client/` as static output and routes `/api/*` to [`api/[...route].mjs`](api/[...route].mjs) via `hono/vercel`.
+
+1. Push your branch to GitHub and import the repository in Vercel.
+2. Keep the default project settings picked up from `vercel.json` (`outputDirectory: client`, `buildCommand: npm run check`).
+3. Add `GEMINI_API_KEY` (and optionally `GEMINI_MODEL`) in Vercel **Project Settings → Environment Variables**, then deploy.
 
 ## What is built
 
 - A responsive, keyboard-friendly dashboard with a local-time PM₂.₅ forecast and a household day planner.
-- Schedule-aware recommendations that preserve a fixed school run and adapt to budget, commute, and selected extra-care needs.
+- Schedule-aware recommendations that preserve fixed daily commitments (school run, work/shift, errands, or none) and adapt to household size, budget, commute, and selected extra-care needs.
 - Indoor steps ordered from free source control to equipment guidance; ventilation advice accounts for outdoor pollution.
 - A transparent modeled outdoor-time comparison and an India-only commute CO₂ estimate that can show savings or an increase.
 - Optional Gemini personalization with explicit consent, deterministic calculations, validated model output, and a local fallback.
@@ -28,19 +47,24 @@ For a production start, use `npm start`. The Gemini key must stay on the server 
 ## How the app is organized
 
 ```text
+api/
+  [...route].mjs   Vercel serverless entrypoint wrapping Hono via hono/vercel
 client/
   index.html       Accessible page structure
   styles.css       Responsive visual system
   app.js           Browser state and API interactions
 server/
-  index.mjs        HTTP server, security headers, validation, rate limits
-  air-quality.mjs  Geocoding, Open-Meteo forecast, short-lived cache
+  index.mjs        Hono HTTP server, security headers, body limits, rate limits
+  air-quality.mjs  Major India presets, geocoding, Open-Meteo forecast, cache
   impact.mjs       Time-window and transport impact calculations
   plan.mjs         Local planning rules and optional Gemini calls
+test/
+  *.test.mjs       Automated unit, Hono app, and Vercel handler tests
 docs/
   ARCHITECTURE.md  Request flow, privacy, and security boundaries
   METHODOLOGY.md   Data, time-zone handling, and estimate assumptions
   JUDGING.md       Challenge criteria map and reviewer walkthrough
+vercel.json        Vercel static output and security headers config
 ```
 
 More detail: [architecture](docs/ARCHITECTURE.md) · [methodology and sources](docs/METHODOLOGY.md) · [prompt design](docs/PROMPT_DESIGN.md) · [judging walkthrough](docs/JUDGING.md).

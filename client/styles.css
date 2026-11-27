@@ -95,6 +95,31 @@ h1 { max-width: 640px; margin-bottom: 22px; color: var(--forest); font-size: cla
 h1 em, h2 em { color: #5b7c44; font-style: normal; }
 .hero-lede { max-width: 485px; margin-bottom: 27px; color: #485852; font-size: 16px; line-height: 1.65; }
 .hero-cta-row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+.manual-location-panel {
+  margin-top: 14px;
+  padding: 15px 16px;
+  border: 1px solid #dce5d7;
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 8px 24px rgba(18, 37, 33, 0.05);
+}
+.manual-location-panel[hidden] { display: none; }
+.manual-location-row { margin-bottom: 10px; }
+.manual-city-form { display: flex; gap: 8px; }
+.manual-city-form input {
+  flex: 1;
+  min-width: 0;
+  min-height: 42px;
+  padding: 0 12px;
+  border: 1px solid #d5ded2;
+  border-radius: 8px;
+  outline: none;
+  color: #22352c;
+  background: #fbfcfa;
+  font-size: 14px;
+}
+.manual-city-form input:focus { border-color: #9ab97c; box-shadow: 0 0 0 3px rgba(146, 184, 114, 0.15); }
+.manual-city-form .button { min-height: 42px; flex-shrink: 0; }
 .button { display: inline-flex; align-items: center; justify-content: center; gap: 13px; min-height: 48px; padding: 0 18px; border: 1px solid transparent; border-radius: 11px; font-size: 14px; font-weight: 720; cursor: pointer; transition: transform 160ms ease, background 160ms ease, border-color 160ms ease; }
 .button:hover { transform: translateY(-1px); }
 .button svg { width: 18px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
@@ -168,6 +193,16 @@ h2 { margin: 0; color: var(--forest); font-size: clamp(30px, 3.8vw, 43px); line-
 .legend-right { margin-left: auto; color: #52645d; font-size: 12px; }
 .timeline { display: grid; grid-template-columns: repeat(12, minmax(28px, 1fr)); align-items: end; gap: 12px; min-height: 190px; padding: 24px 7px 12px; border-bottom: 1px solid var(--line); }
 .timeline-slot { display: grid; justify-items: center; gap: 9px; min-width: 0; }
+.timeline:empty::after {
+  content: "Allow location access or enter a city below to view the 24-hour forecast.";
+  grid-column: 1 / -1;
+  align-self: center;
+  justify-self: center;
+  padding: 20px 12px;
+  color: var(--ink-faint);
+  font-size: 13px;
+  text-align: center;
+}
 .timeline-value { color: #435751; font-size: 12px; font-weight: 680; }
 .timeline-bar-wrap { display: flex; align-items: flex-end; justify-content: center; width: 100%; height: 112px; }
 .timeline-bar { position: relative; width: min(35px, 70%); min-height: 8px; border-radius: 7px 7px 2px 2px; background: linear-gradient(180deg, #f1bc69, #dd8d58); }
@@ -412,6 +447,8 @@ h2 { margin: 0; color: var(--forest); font-size: clamp(30px, 3.8vw, 43px); line-
   .hero-lede { max-width: 480px; margin-bottom: 20px; font-size: 15px; }
   .hero-cta-row { align-items: stretch; }
   .hero-cta-row .button { min-height: 44px; padding-inline: 14px; font-size: 13px; }
+  .manual-city-form { flex-direction: column; }
+  .manual-city-form input { font-size: 16px; }
   .hero-assurances { gap: 11px 17px; margin-top: 16px; font-size: 12px; }
   .air-card { min-height: 0; padding: 21px 19px 16px; border-radius: 18px; }
   .air-current { min-height: 125px; }

@@ -2,8 +2,8 @@
 
 ## Request flow
 
-1. The browser starts with an illustrative Delhi curve. It is labeled as sample data and is not presented as current.
-2. A forecast refresh calls `GET /api/air?city=…`. The server geocodes the place, fetches the Open-Meteo air forecast, normalizes times to UTC timestamps, and returns the provider's city time zone.
+1. On load, the browser starts with an empty live-forecast placeholder (no demo values) and optionally requests geolocation if permitted, or waits for the user to click **Use my location** / **Refresh local forecast**.
+2. A forecast refresh calls `GET /api/air?lat=…&lon=…` (reverse-geocoded on the server and rounded to 2 decimal places) or `GET /api/air?city=…`. The server fetches the Open-Meteo air forecast, normalizes times to UTC timestamps, and returns the provider's city time zone.
 3. Submitting the household form sends the profile and forecast to `POST /api/plan`. Deterministic server code calculates the window and impact figures and generates a complete local plan.
 4. Only when the user checks the Gemini consent box does the request ask Gemini to personalize summary/headline wording. Action details and calculations remain local and deterministic.
 5. Follow-up questions go to `POST /api/refine`. The server returns a local explanation unless consent is present and the Gemini key is configured.
@@ -18,12 +18,11 @@
 
 ## Security controls
 
-- Built on Node's HTTP server with no third-party runtime packages.
-- Content Security Policy and browser security headers; client scripts/styles are same-origin and generated strings are placed with `textContent`.
-- JSON request size capped at 18 KB; profiles, forecast points, time zone, plan shape, and user-provided question are bounded and validated server-side.
+- Built on Hono (`hono` + `@hono/node-server`) with a vanilla browser frontend and no client framework dependencies.
+- Hono `secureHeaders` and `bodyLimit` middleware apply CSP, security headers, and an 18 KB JSON cap; client scripts/styles are same-origin and generated strings are placed with `textContent`.
 - A per-IP in-memory request limit applies to air and planning endpoints. Air results are cached for ten minutes to reduce repeated upstream calls.
 - Gemini output is limited to a strict JSON schema; plan headlines are checked and deterministic action details are retained.
-- No geolocation permission is requested. The user enters a city or nearby area.
+- Same-origin geolocation (`permissions-policy: geolocation=(self)`) is only used when permitted by the user to fetch the regional forecast; coordinates are rounded to 2 decimal places and not persisted. Manual city entry remains available as a fallback.
 
 ## Deliberate boundaries
 

@@ -1,6 +1,24 @@
-const DEMO_VALUES = [174, 168, 155, 146, 139, 133, 128, 120, 108, 94, 80, 69, 61, 57, 59, 68, 82, 96, 112, 128, 139, 146, 151, 149];
+const FALLBACK_INDIA_LOCATIONS = [
+  { name: "New Delhi", region: "Delhi", country: "India" },
+  { name: "Mumbai", region: "Maharashtra", country: "India" },
+  { name: "Bengaluru", region: "Karnataka", country: "India" },
+  { name: "Kolkata", region: "West Bengal", country: "India" },
+  { name: "Chennai", region: "Tamil Nadu", country: "India" },
+  { name: "Hyderabad", region: "Telangana", country: "India" },
+  { name: "Pune", region: "Maharashtra", country: "India" },
+  { name: "Ahmedabad", region: "Gujarat", country: "India" },
+  { name: "Jaipur", region: "Rajasthan", country: "India" },
+  { name: "Lucknow", region: "Uttar Pradesh", country: "India" },
+  { name: "Kanpur", region: "Uttar Pradesh", country: "India" },
+  { name: "Patna", region: "Bihar", country: "India" },
+  { name: "Chandigarh", region: "Chandigarh", country: "India" },
+  { name: "Gurugram", region: "Haryana", country: "India" },
+  { name: "Varanasi", region: "Uttar Pradesh", country: "India" },
+  { name: "Bhopal", region: "Madhya Pradesh", country: "India" },
+];
+
 const state = {
-  air: createDemoAir(),
+  air: null,
   profile: null,
   plan: null,
   impact: null,
@@ -12,38 +30,16 @@ const state = {
 const byId = (id) => document.getElementById(id);
 const numberFormat = new Intl.NumberFormat("en-IN", { maximumFractionDigits: 1 });
 
-function localTimestamp(hour) {
-  const parts = new Intl.DateTimeFormat("en-CA", {
-    timeZone: "Asia/Kolkata", year: "numeric", month: "2-digit", day: "2-digit",
-  }).formatToParts(new Date());
-  const values = Object.fromEntries(parts.map((part) => [part.type, part.value]));
-  const localMidnightHour = Date.UTC(Number(values.year), Number(values.month) - 1, Number(values.day), hour);
-  return new Date(localMidnightHour - (5 * 60 + 30) * 60 * 1000).toISOString();
-}
-
-function createDemoAir() {
-  return {
-    city: { name: "New Delhi", region: "Delhi", country: "India", timezone: "Asia/Kolkata" },
-    current: 116,
-    hourly: Array.from({ length: 48 }, (_, hour) => ({ time: localTimestamp(hour), value: DEMO_VALUES[hour % DEMO_VALUES.length] })),
-    source: "Illustrative sample · not live data",
-    sourceUrl: "https://open-meteo.com/en/docs/air-quality-api",
-    fetchedAt: null,
-    coverageNote: "Sample curve only; not a monitoring station or current reading.",
-    demo: true,
-  };
-}
-
 function formatTime(value) {
   const date = new Date(value);
   if (!Number.isFinite(date.getTime())) return "later";
-  return new Intl.DateTimeFormat("en-IN", { timeZone: state.air.city?.timezone || "UTC", hour: "numeric", minute: "2-digit" }).format(date);
+  return new Intl.DateTimeFormat("en-IN", { timeZone: state.air?.city?.timezone || "UTC", hour: "numeric", minute: "2-digit" }).format(date);
 }
 
 function formatHour(value) {
   const date = new Date(value);
   if (!Number.isFinite(date.getTime())) return "";
-  return new Intl.DateTimeFormat("en-IN", { timeZone: state.air.city?.timezone || "UTC", hour: "numeric" }).format(date);
+  return new Intl.DateTimeFormat("en-IN", { timeZone: state.air?.city?.timezone || "UTC", hour: "numeric" }).format(date);
 }
 
 function formatSelectedHour(hour) {
@@ -54,7 +50,7 @@ function formatSelectedHour(hour) {
 function formatWindowTime(value) {
   const date = new Date(value);
   if (!Number.isFinite(date.getTime())) return formatTime(value);
-  const timezone = state.air.city?.timezone || "UTC";
+  const timezone = state.air?.city?.timezone || "UTC";
   const key = (item) => new Intl.DateTimeFormat("en-CA", {
     timeZone: timezone, year: "numeric", month: "2-digit", day: "2-digit",
   }).format(item);
@@ -70,7 +66,7 @@ function localHour(value) {
   if (!Number.isFinite(date.getTime())) return NaN;
   try {
     const hour = new Intl.DateTimeFormat("en-GB", {
-      timeZone: state.air.city?.timezone || "UTC", hour: "2-digit", hourCycle: "h23",
+      timeZone: state.air?.city?.timezone || "UTC", hour: "2-digit", hourCycle: "h23",
     }).formatToParts(date).find((part) => part.type === "hour")?.value;
     return Number(hour);
   } catch {
@@ -104,12 +100,41 @@ function scaledHeight(value, maximum) {
   return Math.max(1, Math.min(10, Math.round((value / Math.max(maximum, 1)) * 9) + 1));
 }
 
+function renderEmptyAir(subtitle = "Allow location or enter a city") {
+  state.air = null;
+  byId("cityName").textContent = "Your location";
+  byId("cityCountry").textContent = subtitle;
+  byId("sourceBadge").textContent = "LIVE MODEL";
+  byId("pmValue").textContent = "—";
+  const level = byId("pmLevel");
+  level.className = "air-level";
+  const levelDot = document.createElement("span");
+  levelDot.className = "level-dot";
+  levelDot.setAttribute("aria-hidden", "true");
+  level.replaceChildren(levelDot, document.createTextNode(subtitle));
+  byId("forecastStamp").textContent = "No forecast loaded yet";
+  byId("timelineSource").textContent = "CAMS forecast · waiting for location";
+  byId("airChart").setAttribute("aria-label", "Hourly PM2.5 forecast chart, waiting for location or city");
+  byId("airBars").replaceChildren();
+  const timesHost = document.querySelector(".chart-times");
+  if (timesHost) {
+    timesHost.replaceChildren(...Array.from({ length: 4 }, () => {
+      const span = document.createElement("span");
+      span.textContent = "—";
+      return span;
+    }));
+  }
+  byId("timeline").replaceChildren();
+  byId("bestTimeLabel").textContent = "Forecast needed to find a lower window";
+  byId("bestTimeDetail").textContent = "Allow location access or enter a city below to load live hourly PM₂.₅.";
+}
+
 function renderAir(air, preferredWindow = null, usePlanWindow = false) {
   state.air = air;
   const city = air.city?.name || "Selected city";
   byId("cityName").textContent = city;
   byId("cityCountry").textContent = [air.city?.region, air.city?.country].filter(Boolean).join(", ");
-  byId("sourceBadge").textContent = air.demo ? "DEMO FORECAST" : "CAMS MODEL";
+  byId("sourceBadge").textContent = "CAMS MODEL";
   byId("pmValue").textContent = numberFormat.format(air.current);
   const band = pmBand(air.current);
   const level = byId("pmLevel");
@@ -118,13 +143,11 @@ function renderAir(air, preferredWindow = null, usePlanWindow = false) {
   levelDot.className = "level-dot";
   levelDot.setAttribute("aria-hidden", "true");
   level.replaceChildren(levelDot, document.createTextNode(band.label));
-  byId("forecastStamp").textContent = air.demo
-    ? "Illustrative sample · not live data"
-    : "Retrieved " + formatTime(air.fetchedAt);
-  byId("timelineSource").textContent = air.demo ? "Sample values · illustrative" : "CAMS forecast · regional model grid";
+  byId("forecastStamp").textContent = "Retrieved " + formatTime(air.fetchedAt);
+  byId("timelineSource").textContent = "CAMS forecast · regional model grid";
   byId("airChart").setAttribute(
     "aria-label",
-    (air.demo ? "Illustrative demo " : "Regional model ") + "PM2.5 forecast for " + city + ". Lower values indicate less modeled particulate pollution. Not a street-level monitor."
+    "Regional model PM2.5 forecast for " + city + ". Lower values indicate less modeled particulate pollution. Not a street-level monitor."
   );
   renderBars(air.hourly);
   renderChartTimes(air.hourly);
@@ -226,7 +249,7 @@ function renderTimeline(hourly, preferredWindow = undefined) {
 }
 
 function updateBestWindow(window, allowFallback = true) {
-  const selected = window || (allowFallback ? bestWindowFrom(state.air.hourly) : null);
+  const selected = window || (allowFallback && state.air?.hourly ? bestWindowFrom(state.air.hourly) : null);
   if (!selected) {
     byId("bestTimeLabel").textContent = "No clear lower period in this forecast";
     byId("bestTimeDetail").textContent = "Keep flexible outdoor time short while conditions remain elevated.";
@@ -238,6 +261,7 @@ function updateBestWindow(window, allowFallback = true) {
 
 function currentProfile() {
   const commuteKm = Number(byId("commuteKm").value);
+  const fixedCommitment = byId("fixedCommitment").value;
   return {
     city: byId("cityInput").value.trim(),
     householdSize: Number(byId("householdSize").value),
@@ -245,7 +269,8 @@ function currentProfile() {
     walkTime: Number(byId("walkTime").value),
     commuteMode: byId("commuteMode").value,
     commuteKm: Number.isFinite(commuteKm) ? commuteKm : 0,
-    schoolFixed: byId("schoolFixed").checked,
+    fixedCommitment,
+    schoolFixed: fixedCommitment === "school",
     sensitiveNeeds: [
       byId("hasChildren").checked ? "children" : null,
       byId("hasOlderAdult").checked ? "olderAdult" : null,
@@ -256,8 +281,35 @@ function currentProfile() {
 
 function updateProfileSummary(profile) {
   const size = profile.householdSize >= 6 ? "6+" : String(profile.householdSize);
-  byId("householdCount").textContent = size;
+  const householdSummary = byId("householdSummary");
+  if (householdSummary) {
+    householdSummary.textContent = profile.householdSize === 1
+      ? "1 person, personal plan"
+      : size + " people, one shared plan";
+  }
   byId("walkSchedule").textContent = "Flexible · " + formatSelectedHour(profile.walkTime);
+  const fixedLabels = {
+    school: ["School run", "Fixed daily anchor"],
+    work: ["Work / shift", "Fixed daily anchor"],
+    errands: ["Essential errands", "Fixed daily anchor"],
+    none: ["Schedule", "All trips flexible"],
+  };
+  const [fixedTitle, fixedText] = fixedLabels[profile.fixedCommitment] || fixedLabels.school;
+  if (byId("fixedTitle")) byId("fixedTitle").textContent = fixedTitle;
+  if (byId("fixedSchedule")) byId("fixedSchedule").textContent = fixedText;
+  const modeNames = {
+    car: "Car",
+    scooter: "Two-wheeler",
+    bus: "Bus",
+    metro: "Metro",
+    walk: "Walk / cycle",
+    remote: "At home",
+  };
+  if (byId("commuteSchedule")) {
+    byId("commuteSchedule").textContent = profile.commuteMode === "remote"
+      ? "At home · 0 km"
+      : (modeNames[profile.commuteMode] || "Commute") + " · " + profile.commuteKm + " km";
+  }
   const planStyles = {
     zero: "Free changes first",
     low: "Low-cost, practical changes",
@@ -304,7 +356,7 @@ function makeActionCard(action, impact) {
   cost.textContent = action.category === "home" ? "No-cost first" : action.category === "commute" ? "If practical" : "Fits your routine";
   const source = document.createElement("span");
   source.className = "meta-tag meta-muted";
-  source.textContent = state.air.demo ? "Sample forecast" : "Regional forecast";
+  source.textContent = "Regional forecast";
   meta.append(cost, source);
   body.append(heading, detail, meta);
 
@@ -412,30 +464,106 @@ async function getJson(url, options) {
   return payload;
 }
 
-async function refreshAir(city, commit = true) {
+async function fetchForecast(url, labelText, commit = true, { quietError = false } = {}) {
   if (state.forecastLoading) return null;
   state.forecastLoading = true;
-  const button = byId("refreshAir");
-  const label = button.lastChild;
-  button.disabled = true;
-  button.setAttribute("aria-busy", "true");
-  if (label && label.nodeType === Node.TEXT_NODE) label.textContent = " Finding forecast…";
+  const refreshButton = byId("refreshAir");
+  const locationButton = byId("useLocation");
+  const refreshLabel = refreshButton.lastChild;
+  refreshButton.disabled = true;
+  locationButton.disabled = true;
+  refreshButton.setAttribute("aria-busy", "true");
+  locationButton.setAttribute("aria-busy", "true");
+  if (refreshLabel && refreshLabel.nodeType === Node.TEXT_NODE) refreshLabel.textContent = " Finding forecast…";
   try {
-    const result = await getJson("/api/air?city=" + encodeURIComponent(city), { signal: AbortSignal.timeout(11000) });
+    const result = await getJson(url, { signal: AbortSignal.timeout(11000) });
     if (commit) {
       renderAir(result);
       markPlanStale();
     }
-    toast("Regional forecast loaded for " + (result.city?.name || city) + ".");
+    if (result.city?.name) {
+      byId("cityInput").value = result.city.name;
+      const manualInput = byId("manualCityInput");
+      if (manualInput) manualInput.value = result.city.name;
+      const select = byId("majorCitySelect");
+      if (select) {
+        const match = Array.from(select.options).find((opt) => sameCity(opt.value, result.city.name));
+        select.value = match ? match.value : "";
+      }
+    }
+    toast("Regional forecast loaded for " + (result.city?.name || labelText) + ".");
     return result;
   } catch (error) {
-    toast(error instanceof Error ? error.message : "Forecast unavailable. The sample remains labeled.");
+    if (!quietError) {
+      toast(error instanceof Error ? error.message : "Forecast unavailable right now.");
+    }
     return null;
   } finally {
     state.forecastLoading = false;
-    button.disabled = state.loading;
-    button.removeAttribute("aria-busy");
-    if (label && label.nodeType === Node.TEXT_NODE) label.textContent = " Refresh local forecast";
+    refreshButton.disabled = state.loading;
+    locationButton.disabled = state.loading;
+    refreshButton.removeAttribute("aria-busy");
+    locationButton.removeAttribute("aria-busy");
+    if (refreshLabel && refreshLabel.nodeType === Node.TEXT_NODE) refreshLabel.textContent = " Refresh local forecast";
+  }
+}
+
+async function refreshAir(city, commit = true) {
+  const clean = String(city || "").trim();
+  if (clean.length < 2) {
+    toast("Enter a city name or click Use my location.");
+    byId("cityInput").focus();
+    return null;
+  }
+  return fetchForecast("/api/air?city=" + encodeURIComponent(clean), clean, commit);
+}
+
+function getBrowserPosition() {
+  return new Promise((resolve, reject) => {
+    if (!navigator.geolocation) {
+      reject(new Error("Location access is not supported in this browser."));
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(resolve, reject, {
+      enableHighAccuracy: false,
+      timeout: 8000,
+      maximumAge: 300_000,
+    });
+  });
+}
+
+async function refreshAirFromLocation({ auto = false } = {}) {
+  if (state.forecastLoading || state.loading) return null;
+  if (!navigator.geolocation) {
+    if (!auto) toast("Location access is not supported in this browser. Enter your city below.");
+    return null;
+  }
+  if (auto) setStatus("Checking your location for a live forecast…", "loading");
+  try {
+    const position = await getBrowserPosition();
+    const { latitude, longitude } = position.coords;
+    const result = await fetchForecast(
+      "/api/air?lat=" + encodeURIComponent(latitude) + "&lon=" + encodeURIComponent(longitude),
+      "your area",
+      true,
+      { quietError: auto },
+    );
+    if (result) {
+      if (result.city?.name) byId("cityInput").value = result.city.name;
+      setStatus("Live forecast loaded for " + (result.city?.name || "your location") + ". Ready to build your plan.", "ready");
+    } else if (auto) {
+      setStatus("Could not load forecast automatically. Enter your city and refresh.", "ready");
+    }
+    return result;
+  } catch (error) {
+    const denied = error && typeof error === "object" && "code" in error && error.code === 1;
+    const message = denied
+      ? "Location access was declined. Enter your city below to load a live forecast."
+      : "Couldn’t detect your location. Enter your city below to load a live forecast.";
+    if (!auto) toast(message);
+    if (!state.air) renderEmptyAir("Enter a city below to load a forecast");
+    setStatus(message, "ready");
+    return null;
   }
 }
 
@@ -451,7 +579,7 @@ async function submitPlan(event) {
   }
   const profile = currentProfile();
   if (profile.city.length < 2) {
-    setStatus("Enter a city or nearby area first.", "error");
+    setStatus("Allow location access or enter a city first.", "error");
     byId("cityInput").focus();
     return;
   }
@@ -459,17 +587,19 @@ async function submitPlan(event) {
   state.loading = true;
   const button = byId("planButton");
   const refreshButton = byId("refreshAir");
+  const locationButton = byId("useLocation");
   button.disabled = true;
   refreshButton.disabled = true;
+  locationButton.disabled = true;
   button.querySelector(".button-label").textContent = "Preparing your plan…";
   let planAir = state.air;
 
   try {
-    if (!sameCity(profile.city, state.air.city?.name)) {
+    if (!planAir || !sameCity(profile.city, planAir.city?.name)) {
       setStatus("Loading the forecast for " + profile.city + "…", "loading");
       const refreshed = await refreshAir(profile.city, false);
       if (!refreshed) {
-        setStatus("Couldn’t load that location. Your previous sample remains unchanged.", "error");
+        setStatus("Couldn’t load that location. Check the city name and try again.", "error");
         return;
       }
       planAir = refreshed;
@@ -495,6 +625,7 @@ async function submitPlan(event) {
     state.loading = false;
     button.disabled = false;
     refreshButton.disabled = false;
+    locationButton.disabled = false;
     button.querySelector(".button-label").textContent = "Build our day plan";
   }
 }
@@ -590,13 +721,97 @@ function initializeNavigation() {
   });
 }
 
+function toggleManualLocationPanel(forceOpen) {
+  const panel = byId("manualLocationPanel");
+  const button = byId("manualLocationBtn");
+  if (!panel || !button) return;
+  const shouldOpen = typeof forceOpen === "boolean" ? forceOpen : panel.hidden;
+  panel.hidden = !shouldOpen;
+  button.setAttribute("aria-expanded", String(shouldOpen));
+  if (shouldOpen) {
+    byId("majorCitySelect")?.focus();
+  }
+}
+
+function renderLocationOptions(locations) {
+  const select = byId("majorCitySelect");
+  const datalist = byId("majorCitiesList");
+  if (select) {
+    const placeholder = document.createElement("option");
+    placeholder.value = "";
+    placeholder.textContent = "Select a major Indian city…";
+    const items = locations.map((loc) => {
+      const option = document.createElement("option");
+      option.value = loc.name;
+      option.textContent = loc.region && loc.region !== loc.name
+        ? loc.name + ", " + loc.region
+        : loc.name;
+      return option;
+    });
+    select.replaceChildren(placeholder, ...items);
+  }
+  if (datalist) {
+    datalist.replaceChildren(...locations.map((loc) => {
+      const option = document.createElement("option");
+      option.value = loc.name;
+      return option;
+    }));
+  }
+}
+
+async function loadMajorLocations() {
+  renderLocationOptions(FALLBACK_INDIA_LOCATIONS);
+  try {
+    const payload = await getJson("/api/locations", { signal: AbortSignal.timeout(5000) });
+    if (Array.isArray(payload?.locations) && payload.locations.length > 0) {
+      renderLocationOptions(payload.locations);
+    }
+  } catch {
+    // Keep fallback list when server is offline.
+  }
+}
+
+async function selectManualCity(city) {
+  const clean = String(city || "").trim();
+  if (clean.length < 2) return;
+  byId("cityInput").value = clean;
+  const manualInput = byId("manualCityInput");
+  if (manualInput) manualInput.value = clean;
+  setStatus("Loading the forecast for " + clean + "…", "loading");
+  const result = await refreshAir(clean);
+  if (result) {
+    setStatus("Live forecast loaded for " + (result.city?.name || clean) + ". Ready to build your plan.", "ready");
+  }
+}
+
 async function initialize() {
-  renderAir(state.air);
+  renderEmptyAir();
   initializeNavigation();
   byId("profileForm").addEventListener("submit", submitPlan);
   byId("refineForm").addEventListener("submit", submitRefinement);
+  byId("useLocation").addEventListener("click", () => {
+    if (!state.loading) refreshAirFromLocation({ auto: false });
+  });
+  byId("manualLocationBtn")?.addEventListener("click", () => toggleManualLocationPanel());
+  byId("majorCitySelect")?.addEventListener("change", (event) => {
+    const city = event.target.value;
+    if (city && !state.loading) selectManualCity(city);
+  });
+  byId("manualCityForm")?.addEventListener("submit", (event) => {
+    event.preventDefault();
+    const city = byId("manualCityInput").value.trim();
+    if (city.length < 2) {
+      toast("Select a city from the list or enter at least 2 characters.");
+      byId("manualCityInput").focus();
+      return;
+    }
+    if (!state.loading) selectManualCity(city);
+  });
   byId("refreshAir").addEventListener("click", () => {
-    if (!state.loading) refreshAir(byId("cityInput").value.trim());
+    if (state.loading) return;
+    const city = byId("cityInput").value.trim();
+    if (city.length >= 2) refreshAir(city);
+    else toggleManualLocationPanel(true);
   });
   byId("copyPledge").addEventListener("click", copyInvite);
   byId("methodButton").addEventListener("click", toggleMethod);
@@ -619,9 +834,13 @@ async function initialize() {
       byId("aiConsent").nextElementSibling.nextElementSibling.textContent = "Send my setup and questions to Gemini (server key not set)";
     }
   } catch {
+    renderLocationOptions(FALLBACK_INDIA_LOCATIONS);
     setStatus("Local page preview. Start the Node server for live air data and Gemini.", "ready");
   }
-  if (serverAvailable) setStatus("Illustrative sample ready. Build a plan or refresh for your city’s forecast.", "ready");
+  if (serverAvailable) {
+    await loadMajorLocations();
+    await refreshAirFromLocation({ auto: true });
+  }
 }
 
 initialize();

@@ -53,10 +53,34 @@
               Build our day plan
               <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4 10h11M10 5l5 5-5 5" /></svg>
             </a>
+            <button class="button button-quiet" id="useLocation" type="button">
+              <svg class="refresh-icon" viewBox="0 0 20 20" aria-hidden="true"><path d="M10 2.5v2.3M10 15.2v2.3M2.5 10h2.3M15.2 10h2.3M10 13.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z" /></svg>
+              Use my location
+            </button>
+            <button class="button button-quiet" id="manualLocationBtn" type="button" aria-expanded="false" aria-controls="manualLocationPanel">
+              <svg class="refresh-icon" viewBox="0 0 20 20" aria-hidden="true"><path d="M16 8.3c0 4.3-6 9-6 9s-6-4.7-6-9a6 6 0 1 1 12 0Z"/><circle cx="10" cy="8.1" r="2"/></svg>
+              Enter my location manually
+            </button>
             <button class="button button-quiet" id="refreshAir" type="button">
               <svg class="refresh-icon" viewBox="0 0 20 20" aria-hidden="true"><path d="M16.5 7A6.5 6.5 0 0 0 5.3 4.2L3.5 6M3.5 6V2.8M3.5 6h3.2M3.5 13a6.5 6.5 0 0 0 11.2 2.8l1.8-1.8m0 0v3.2m0-3.2h-3.2" /></svg>
               Refresh local forecast
             </button>
+          </div>
+          <div class="manual-location-panel" id="manualLocationPanel" hidden>
+            <div class="manual-location-row">
+              <label class="field" for="majorCitySelect">
+                <span>Major locations in India</span>
+                <select id="majorCitySelect">
+                  <option value="">Select a major Indian city…</option>
+                </select>
+              </label>
+            </div>
+            <form class="manual-city-form" id="manualCityForm">
+              <label class="sr-only" for="manualCityInput">Or type another city</label>
+              <input id="manualCityInput" list="majorCitiesList" maxlength="60" placeholder="Or type another city (e.g. Surat, Nagpur)…" />
+              <button class="button button-dark" type="submit" id="manualCitySubmit">Load forecast</button>
+            </form>
+            <datalist id="majorCitiesList"></datalist>
           </div>
           <div class="hero-assurances">
             <span><svg viewBox="0 0 16 16" aria-hidden="true"><path d="m3 8 3 3 7-7" /></svg> No account needed</span>
@@ -68,32 +92,32 @@
           <div class="air-card-top">
             <div>
               <p class="eyebrow eyebrow-light">TODAY’S OUTDOOR AIR</p>
-              <h2 id="air-card-title"><span id="cityName">New Delhi</span><span class="city-country" id="cityCountry">Delhi, India</span></h2>
+              <h2 id="air-card-title"><span id="cityName">Your location</span><span class="city-country" id="cityCountry">Waiting for live forecast</span></h2>
             </div>
-            <span class="forecast-badge"><span class="pulse-dot"></span><span id="sourceBadge">DEMO FORECAST</span></span>
+            <span class="forecast-badge"><span class="pulse-dot"></span><span id="sourceBadge">LIVE MODEL</span></span>
           </div>
           <div class="air-current">
             <div class="air-reading">
               <span class="reading-label">PM₂.₅ model estimate</span>
-              <div class="reading-number"><strong id="pmValue">116</strong><span>µg/m³</span></div>
-              <span class="air-level" id="pmLevel"><span class="level-dot"></span> Elevated</span>
+              <div class="reading-number"><strong id="pmValue">—</strong><span>µg/m³</span></div>
+              <span class="air-level" id="pmLevel"><span class="level-dot"></span> Allow location or enter a city</span>
             </div>
             <div class="air-orbit" aria-hidden="true">
               <div class="orbit orbit-one"></div><div class="orbit orbit-two"></div>
-              <div class="orbit-core"><span id="airTrend">↘</span><small>next<br />window</small></div>
+              <div class="orbit-core"><span id="airTrend">⋯</span><small>next<br />window</small></div>
             </div>
           </div>
           <div class="chart-head">
             <span>PM₂.₅ through the day</span>
             <span class="chart-unit">µg/m³ · lower is better</span>
           </div>
-          <div class="air-chart" id="airChart" role="img" aria-label="Illustrative PM2.5 forecast, lower values indicate less particulate pollution">
+          <div class="air-chart" id="airChart" role="img" aria-label="Hourly PM2.5 forecast chart, waiting for location or city">
             <div class="chart-grid"><span></span><span></span><span></span></div>
             <div class="chart-bars" id="airBars"></div>
           </div>
-          <div class="chart-times" aria-hidden="true"><span>12 AM</span><span>6 AM</span><span>12 PM</span><span>6 PM</span></div>
+          <div class="chart-times" aria-hidden="true"><span>—</span><span>—</span><span>—</span><span>—</span></div>
           <div class="air-card-foot">
-            <span class="freshness" id="forecastStamp">Illustrative sample · not live data</span>
+            <span class="freshness" id="forecastStamp">No forecast loaded yet</span>
             <a class="source-link" href="https://open-meteo.com/en/docs/air-quality-api" target="_blank" rel="noreferrer">PM₂.₅ model · not official AQI ↗</a>
           </div>
         </article>
@@ -105,7 +129,7 @@
           <div><strong id="bestTimeLabel">A lower period may arrive later</strong><span id="bestTimeDetail">We’ll compare the forecast with your schedule.</span></div>
         </div>
         <div class="signal-divider"></div>
-        <div class="signal-item"><span class="signal-kicker">YOUR HOUSEHOLD</span><strong><span id="householdCount">4</span> people, one shared plan</strong></div>
+        <div class="signal-item"><span class="signal-kicker">YOUR HOUSEHOLD</span><strong id="householdSummary"><span id="householdCount">4</span> people, one shared plan</strong></div>
         <div class="signal-item"><span class="signal-kicker">PLAN STYLE</span><strong id="planStyle">Practical, low-cost changes</strong></div>
         <button class="signal-edit" type="button" data-scroll-to="profile">Edit details <span aria-hidden="true">↗</span></button>
       </section>
@@ -122,14 +146,14 @@
           <div class="timeline-legend">
             <span><i class="legend-dot legend-high"></i> More PM₂.₅ in this model</span>
             <span><i class="legend-dot legend-low"></i> Lower modeled period</span>
-            <span class="legend-right" id="timelineSource">Demo values · illustrative</span>
+            <span class="legend-right" id="timelineSource">CAMS forecast · waiting for location</span>
           </div>
           <div class="timeline" id="timeline" role="list" aria-label="Next 24 hours PM2.5 forecast"></div>
           <div class="schedule-ribbon">
             <div class="ribbon-title"><span class="ribbon-mark" aria-hidden="true">✦</span> YOUR DAY, OVERLAID</div>
-            <div class="ribbon-event"><span class="event-line event-school"></span><strong>School run</strong><span>Fixed · 8:15 AM</span></div>
-            <div class="ribbon-event"><span class="event-line event-walk"></span><strong>Family walk</strong><span id="walkSchedule">Flexible · 7:00 AM</span></div>
-            <div class="ribbon-event"><span class="event-line event-commute"></span><strong>Work commute</strong><span>One trip</span></div>
+            <div class="ribbon-event"><span class="event-line event-school"></span><strong id="fixedTitle">School run</strong><span id="fixedSchedule">Fixed daily anchor</span></div>
+            <div class="ribbon-event"><span class="event-line event-walk"></span><strong>Outdoor routine</strong><span id="walkSchedule">Flexible · 7:00 AM</span></div>
+            <div class="ribbon-event"><span class="event-line event-commute"></span><strong>Commute</strong><span id="commuteSchedule">Car · 6 km</span></div>
             <button class="text-link" data-scroll-to="profile" type="button">Adjust schedule <span aria-hidden="true">↗</span></button>
           </div>
         </div>
@@ -156,12 +180,12 @@
             <div class="form-grid">
               <label class="field field-wide">
                 <span>City or nearby area</span>
-                <div class="input-icon-wrap"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M16 8.3c0 4.3-6 9-6 9s-6-4.7-6-9a6 6 0 1 1 12 0Z"/><circle cx="10" cy="8.1" r="2"/></svg><input id="cityInput" name="city" value="New Delhi" autocomplete="address-level2" maxlength="60" /></div>
+                <div class="input-icon-wrap"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M16 8.3c0 4.3-6 9-6 9s-6-4.7-6-9a6 6 0 1 1 12 0Z"/><circle cx="10" cy="8.1" r="2"/></svg><input id="cityInput" name="city" list="majorCitiesList" value="" placeholder="Enter your city or select manually above" autocomplete="address-level2" maxlength="60" /></div>
               </label>
               <label class="field">
                 <span>People at home</span>
                 <select id="householdSize" name="householdSize">
-                  <option value="2">2 people</option><option value="3">3 people</option><option value="4" selected>4 people</option><option value="5">5 people</option><option value="6">6+ people</option>
+                  <option value="1">1 person (solo)</option><option value="2">2 people</option><option value="3">3 people</option><option value="4" selected>4 people</option><option value="5">5 people</option><option value="6">6+ people</option>
                 </select>
               </label>
               <label class="field">
@@ -179,9 +203,9 @@
                 </div>
               </fieldset>
               <label class="field">
-                <span>Flexible walk usually starts</span>
+                <span>Usual flexible outdoor time</span>
                 <select id="walkTime" name="walkTime">
-                  <option value="6">6:00 AM</option><option value="7" selected>7:00 AM</option><option value="8">8:00 AM</option><option value="18">6:00 PM</option>
+                  <option value="5">5:00 AM</option><option value="6">6:00 AM</option><option value="7" selected>7:00 AM</option><option value="8">8:00 AM</option><option value="9">9:00 AM</option><option value="10">10:00 AM</option><option value="16">4:00 PM</option><option value="17">5:00 PM</option><option value="18">6:00 PM</option><option value="19">7:00 PM</option><option value="20">8:00 PM</option>
                 </select>
               </label>
               <label class="field">
@@ -194,15 +218,19 @@
                 <span>One-way commute distance</span>
                 <div class="input-icon-wrap"><input id="commuteKm" name="commuteKm" type="number" min="0" max="80" step="0.5" value="6" /><span class="distance-unit">km</span></div>
               </label>
-              <label class="toggle-row field-wide">
-                <input type="checkbox" id="schoolFixed" checked />
-                <span class="toggle-ui" aria-hidden="true"></span>
-                <span><strong>School drop-off cannot move</strong><small>We’ll keep the 8:15 AM commitment in place.</small></span>
+              <label class="field field-wide">
+                <span>Fixed daily commitment that cannot move</span>
+                <select id="fixedCommitment" name="fixedCommitment">
+                  <option value="school" selected>School run / pickup</option>
+                  <option value="work">Work / shift hours</option>
+                  <option value="errands">Essential errands or caregiving</option>
+                  <option value="none">No fixed anchor today (flexible)</option>
+                </select>
               </label>
             </div>
             <div class="privacy-disclosure">
               <span class="privacy-lock" aria-hidden="true"><svg viewBox="0 0 20 20"><rect x="4.5" y="8.5" width="11" height="8" rx="2"/><path d="M7 8.5V6a3 3 0 0 1 6 0v2.5"/></svg></span>
-              <p>This app does not store your setup. Building a plan sends your city, forecast, schedule, budget, and extra-care selections to this server for calculation. With consent, those details and your follow-up questions also go to Google’s Gemini API. Don’t enter names or diagnoses; Google’s API data terms apply.</p>
+              <p>This app does not store your setup or location. If you allow location access, coordinates are used once to load your regional forecast. Building a plan sends your city, forecast, schedule, budget, and extra-care selections to this server for calculation. With consent, those details and your follow-up questions also go to Google’s Gemini API. Don’t enter names or diagnoses; Google’s API data terms apply.</p>
             </div>
             <label class="ai-consent">
               <input type="checkbox" id="aiConsent" />
@@ -224,16 +252,16 @@
               </div>
               <span class="ai-mode-pill" id="aiMode"><span class="ai-spark">✦</span> Local guide</span>
             </div>
-            <p class="plan-intro" id="planIntro">Build a plan to see a lower-forecast window, a fixed school-run adjustment, and indoor steps that fit your budget.</p>
+            <p class="plan-intro" id="planIntro">Build a plan to see a lower-forecast window for your flexible routine, practical adjustments for fixed commitments, and indoor steps that fit your budget.</p>
             <div class="action-list" id="actionList">
               <article class="action-card action-card-featured">
                 <div class="action-time"><span class="action-icon icon-clock">◷</span><span>FLEXIBLE ROUTINE</span></div>
-                <div class="action-body"><h4>Find a calmer hour for the family walk</h4><p>We’ll compare the model with your usual start time. If no useful window appears, we’ll suggest an indoor alternative instead.</p><div class="action-meta"><span class="meta-tag">No cost</span><span class="meta-tag meta-muted">Forecast-based</span></div></div>
+                <div class="action-body"><h4>Find a calmer hour for your outdoor routine</h4><p>We’ll compare the forecast with your usual start time. If no useful window appears, we’ll suggest an indoor alternative instead.</p><div class="action-meta"><span class="meta-tag">No cost</span><span class="meta-tag meta-muted">Forecast-based</span></div></div>
                 <span class="action-impact">READY TO PLAN</span>
               </article>
               <article class="action-card">
                 <div class="action-time"><span class="action-icon icon-route">⌁</span><span>FIXED COMMITMENT</span></div>
-                <div class="action-body"><h4>Keep the school run; reduce the waiting</h4><p>Shorten outdoor queue time where practical and avoid leaving an engine idling at pickup.</p><div class="action-meta"><span class="meta-tag">Fits your schedule</span></div></div>
+                <div class="action-body"><h4>Keep fixed commitments; cut roadside waiting</h4><p>Leave essential trips in place, shorten outdoor queue time, and avoid idling beside traffic.</p><div class="action-meta"><span class="meta-tag">Fits your schedule</span></div></div>
                 <span class="action-impact impact-neutral">PRACTICAL</span>
               </article>
               <article class="action-card">

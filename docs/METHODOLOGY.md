@@ -6,7 +6,7 @@
 - The response uses CAMS forecast fields and an automatically resolved city time zone. The provider documents the product as a forecast on a regional model grid; it is not an on-street measurement.
 - The server requests Unix timestamps, then stores ISO UTC instants. The UI formats forecast hours in the selected location's time zone. This avoids interpreting a city's local timestamps in the server's or viewer's time zone.
 - Forecast values are in µg/m³. The app does not translate them into a national or local AQI. Display labels such as “elevated” are descriptive UI bands only.
-- On startup, the chart uses an illustrative, fixed sample curve. It remains labeled “not live data” until the user refreshes.
+- On startup, no demo curve is displayed; live forecast values load once location permission is granted or a city is requested.
 
 ## Flexible outdoor-time comparison
 

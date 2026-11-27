@@ -37,12 +37,26 @@ const baseProfile = {
   sensitiveNeeds: ["children"],
 };
 
-test("validateProfile enforces allowed bounds and options", () => {
-  const valid = validateProfile({ ...baseProfile, sensitiveNeeds: ["children", "invalid"] });
+test("validateProfile enforces allowed bounds and supports generic commitments", () => {
+  const valid = validateProfile({
+    ...baseProfile,
+    householdSize: 1,
+    walkTime: 19,
+    fixedCommitment: "work",
+    sensitiveNeeds: ["children", "invalid"],
+  });
   assert.deepEqual(valid.sensitiveNeeds, ["children"]);
+  assert.equal(valid.householdSize, 1);
+  assert.equal(valid.walkTime, 19);
+  assert.equal(valid.fixedCommitment, "work");
+  assert.equal(valid.schoolFixed, false);
+
+  const legacy = validateProfile(baseProfile);
+  assert.equal(legacy.fixedCommitment, "school");
+  assert.equal(legacy.schoolFixed, true);
 
   assert.throws(() => validateProfile({ ...baseProfile, householdSize: 20 }), /household size/i);
-  assert.throws(() => validateProfile({ ...baseProfile, walkTime: 11 }), /walk time/i);
+  assert.throws(() => validateProfile({ ...baseProfile, walkTime: 25 }), /outdoor routine hour/i);
   assert.throws(() => validateProfile({ ...baseProfile, commuteKm: 120 }), /commute distance/i);
   assert.throws(() => validateProfile({ ...baseProfile, budget: "unlimited" }), /budget/i);
   assert.throws(() => validateProfile({ ...baseProfile, commuteMode: "plane" }), /commute mode/i);
@@ -53,11 +67,10 @@ test("validateAir normalizes invalid timezone to UTC and rejects unusable data",
     city: { name: "Delhi", country: "India", timezone: "Invalid/Zone" },
     current: 95.24,
     hourly: makeFutureAir().hourly,
-    demo: true,
   });
   assert.equal(valid.city.timezone, "UTC");
   assert.equal(valid.current, 95.2);
-  assert.match(valid.source, /Illustrative sample/);
+  assert.equal(valid.source, "Open-Meteo · CAMS model forecast");
 
   assert.throws(() => validateAir({ current: 50, hourly: [] }), /Refresh the forecast/);
   assert.throws(() => validateAir({ current: -5, hourly: makeFutureAir().hourly }), /current forecast/i);
@@ -71,7 +84,17 @@ test("createPlan recommends lower window for moderate air and indoor-first for s
   assert.equal(moderateResult.plan.actions[0].badge, "LOWER MODEL WINDOW");
   assert.equal(moderateResult.plan.actions[1].category, "fixed");
   assert.match(moderateResult.plan.actions[1].headline, /school run/i);
+  assert.match(moderateResult.plan.actions[2].detail, /round trip/i);
   assert.match(moderateResult.plan.actions[3].detail, /need no purchase/i);
+
+  const workResult = await createPlan(moderateAir, {
+    ...baseProfile,
+    householdSize: 1,
+    fixedCommitment: "work",
+    schoolFixed: false,
+  }, false);
+  assert.match(workResult.plan.intro, /personal setup/i);
+  assert.match(workResult.plan.actions[1].headline, /work hours/i);
 
   const severeAir = makeFutureAir({ 7: 260, 12: 170, 13: 165, 14: 170 }, 240, 210);
   const severeResult = await createPlan(severeAir, baseProfile, false);

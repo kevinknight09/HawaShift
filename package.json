@@ -9,7 +9,11 @@
   "scripts": {
     "dev": "node --watch --env-file-if-exists=.env server/index.mjs",
     "start": "node --env-file-if-exists=.env server/index.mjs",
-    "check": "node --check server/index.mjs && node --check server/air-quality.mjs && node --check server/impact.mjs && node --check server/plan.mjs && node --check client/app.js",
+    "check": "node --check server/index.mjs && node --check server/air-quality.mjs && node --check server/impact.mjs && node --check server/plan.mjs && node --check client/app.js && node --check \"api/[...route].mjs\"",
     "test": "node --test"
+  },
+  "dependencies": {
+    "@hono/node-server": "^2.1.11",
+    "hono": "^4.13.23"
   }
 }

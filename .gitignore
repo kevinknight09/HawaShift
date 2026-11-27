@@ -2,7 +2,10 @@
 .env.*
 !.env.example
 .DS_Store
+Thumbs.db
 node_modules/
+.vercel/
+*.log
 coverage/
 playwright-report/
 test-results/

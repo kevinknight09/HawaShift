@@ -20,15 +20,15 @@ export function makeLocalPlan(air, profile, impact) {
       ? {
           category: "routine",
           tag: "FLEXIBLE ROUTINE",
-          headline: "Keep the walk indoors; avoid peak hours if going out",
-          detail: "Even the lowest two-hour daytime window averages " + window.meanPm25 + " µg/m³ (versus " + impact.baselinePm25 + " µg/m³ near your usual start). During very high modeled periods, moving flexible exercise indoors avoids extra exposure; if you must step out, prefer " + formatPlanTime(window.start, air.city?.timezone) + ".",
+          headline: "Keep flexible outdoor exercise indoors today",
+          detail: "Even the lowest two-hour daytime window averages " + window.meanPm25 + " µg/m³ (versus " + impact.baselinePm25 + " µg/m³ near your usual start). During very high modeled periods, moving flexible activity indoors avoids extra exposure; if you must step out, prefer " + formatPlanTime(window.start, air.city?.timezone) + ".",
           badge: "VERY HIGH · INDOORS FIRST",
           tone: "amber",
         }
       : {
           category: "routine",
           tag: "FLEXIBLE ROUTINE",
-          headline: "Move the optional walk toward " + formatPlanTime(window.start, air.city?.timezone),
+          headline: "Shift your flexible outdoor routine toward " + formatPlanTime(window.start, air.city?.timezone),
           detail: "This two-hour model window averages " + window.meanPm25 + " µg/m³ versus " + impact.baselinePm25 + " µg/m³ near your usual start. It is a lower forecast period, not a safe-air guarantee.",
           badge: "LOWER MODEL WINDOW",
           tone: "green",
@@ -36,39 +36,58 @@ export function makeLocalPlan(air, profile, impact) {
     : {
         category: "routine",
         tag: "FLEXIBLE ROUTINE",
-        headline: "Keep the walk indoors if the air stays high",
-        detail: "The available daytime forecast does not show a clear lower two-hour window than your usual time. An indoor activity avoids adding outdoor minutes during the higher modeled period.",
+        headline: "Keep optional outdoor time indoors if the air stays high",
+        detail: "The available daytime forecast does not show a clear lower two-hour window than your usual time. An indoor alternative avoids adding outdoor minutes during the higher modeled period.",
         badge: "NO CLEAR WINDOW",
         tone: "amber",
       };
 
-  const fixed = profile.schoolFixed
-    ? {
-        category: "fixed",
-        tag: "FIXED COMMITMENT",
-        headline: "Keep the school run; reduce the waiting",
-        detail: "Leave the schedule in place. If practical, shorten time standing beside traffic and switch the engine off while waiting at pickup.",
-        badge: "FITS YOUR DAY",
-        tone: "blue",
-      }
-    : {
-        category: "fixed",
-        tag: "OUTDOOR TIME",
-        headline: sensitive ? "Keep outdoor time short and easy today" : "Bundle the day’s outdoor errands",
-        detail: sensitive
-          ? "With a household member who may need extra care, prefer shorter, less strenuous outdoor time while the forecast remains elevated. Follow any personal care plan."
-          : "Group essential errands into one outing and use the lower modeled period when that works for your schedule.",
-        badge: "FLEXIBLE",
-        tone: "blue",
-      };
+  const fixedCommitment = profile.fixedCommitment || (profile.schoolFixed ? "school" : "none");
+  const fixedMap = {
+    school: {
+      category: "fixed",
+      tag: "FIXED COMMITMENT",
+      headline: "Keep the school run; reduce roadside waiting",
+      detail: "Leave the pickup/drop-off schedule in place. Shorten time standing beside traffic and switch the engine off while waiting.",
+      badge: "FITS YOUR DAY",
+      tone: "blue",
+    },
+    work: {
+      category: "fixed",
+      tag: "FIXED COMMITMENT",
+      headline: "Keep your fixed work hours; trim curbside exposure",
+      detail: "Keep your departure timing intact. Wait away from idling traffic where possible, and pair errands with your existing trip so you do not add an extra outing.",
+      badge: "FITS YOUR DAY",
+      tone: "blue",
+    },
+    errands: {
+      category: "fixed",
+      tag: "FIXED COMMITMENT",
+      headline: "Bundle fixed errands into one direct trip",
+      detail: "Keep essential appointments and caregiving on schedule, combine nearby stops to cut total outdoor minutes, and avoid idling along main roads.",
+      badge: "FITS YOUR DAY",
+      tone: "blue",
+    },
+  };
+  const fixed = fixedMap[fixedCommitment] || {
+    category: "fixed",
+    tag: "OUTDOOR TIME",
+    headline: sensitive ? "Keep essential outdoor time short and low-effort" : "Bundle the day’s outdoor errands",
+    detail: sensitive
+      ? "With someone in the home needing extra care, keep essential outdoor time brief and less strenuous while the forecast remains elevated. Follow any personal care plan."
+      : "Group essential errands into one outing and use the lower modeled period when that fits your schedule.",
+    badge: "FLEXIBLE",
+    tone: "blue",
+  };
 
   const privateCommute = profile.commuteMode === "car" || profile.commuteMode === "scooter";
+  const roundTripKg = impact.emissionsKg !== null ? Math.round(impact.emissionsKg * 2 * 100) / 100 : null;
   const commute = privateCommute && impact.emissionsKg > 0
     ? {
         category: "commute",
         tag: "LOWER-EMISSION SWAP",
-        headline: "Try the bus for one trip, if it fits",
-        detail: "Under the stated distance and occupancy assumptions, this one-way bus comparison is lower in estimated CO₂. Keep your usual mode if transit is not practical.",
+        headline: "Try transit or shared travel for one trip, if it fits",
+        detail: "Under the stated distance and default occupancy assumptions, a one-way bus trip saves ~" + impact.emissionsKg.toFixed(2) + " kg CO₂ (~" + roundTripKg.toFixed(2) + " kg round trip). Keep your usual mode if transit is not practical.",
         badge: "ONE TRIP",
         tone: "blue",
       }
@@ -80,7 +99,7 @@ export function makeLocalPlan(air, profile, impact) {
         detail: impact.emissionsKg === null && impact.emissionsNote.startsWith("Commute estimate unavailable")
           ? "Comparable local transport factors are not available for this location. Keep the practical route; combine errands to avoid a separate motor trip."
           : impact.emissionsKg === null
-            ? "Your commute distance is zero, so there is no transport comparison to show. If practical, combine errands and avoid adding a separate motor trip."
+            ? "Your commute distance is zero, so there is no transport comparison to show. Combine errands and avoid adding a separate motor trip."
             : "The bus comparison does not show a CO₂ saving under the selected distance and default occupancy. Keep the practical route; combine errands to avoid a separate motor trip.",
         badge: impact.emissionsKg === null ? "NO COMPARISON" : "MODEL CHECK",
         tone: "blue",
@@ -90,7 +109,7 @@ export function makeLocalPlan(air, profile, impact) {
         tag: "LOWER-EMISSION ROUTINE",
         headline: profile.commuteMode === "remote" ? "Keep the work trip off the road" : "Keep the shared trip; avoid extra starts",
         detail: profile.commuteMode === "remote"
-          ? "If you can work from home today, combining errands into another necessary trip avoids an extra commute."
+          ? "Working from home today avoids a commute; combining errands into one necessary trip avoids extra road emissions."
           : "Your selected travel mode is already shared or active. Combine nearby errands and avoid a separate motor trip where convenient.",
         badge: "NO EXTRA TRIP",
         tone: "blue",
@@ -114,7 +133,8 @@ export function makeLocalPlan(air, profile, impact) {
   const summary = sensitive
     ? "Protect the flexible minutes. Keep fixed commitments practical."
     : "Keep the essentials. Shift the parts of the day you can.";
-  const intro = "We used the " + (air.demo ? "illustrative demo curve" : "regional model forecast") + ", your usual walk time, commute choice, and " + budgetText + " indoor budget. Your fixed commitments stay in place.";
+  const whoText = profile.householdSize === 1 ? "personal setup" : profile.householdSize + "-person household";
+  const intro = "We used the regional model forecast, your " + whoText + ", usual outdoor hour, commute choice, and " + budgetText + " indoor budget. Fixed commitments stay in place.";
 
   return { summary, intro, actions: [routine, fixed, commute, home] };
 }
@@ -192,9 +212,9 @@ function promptForPlan(air, profile, draft) {
       size: profile.householdSize,
       extraCareNeeds: profile.sensitiveNeeds,
       indoorBudget: profile.budget,
-      usualWalkStartHour: profile.walkTime,
+      usualOutdoorStartHour: profile.walkTime,
       commuteMode: profile.commuteMode,
-      schoolRunFixed: profile.schoolFixed,
+      fixedCommitment: profile.fixedCommitment || (profile.schoolFixed ? "school" : "none"),
     },
     forecast: {
       currentPm25: air.current,
@@ -253,7 +273,7 @@ export async function refinePlan(question, air, profile, plan) {
       extraCareNeeds: profile.sensitiveNeeds,
       budget: profile.budget,
       commuteMode: profile.commuteMode,
-      schoolRunFixed: profile.schoolFixed,
+      fixedCommitment: profile.fixedCommitment || (profile.schoolFixed ? "school" : "none"),
     },
     plan,
   });
@@ -273,16 +293,22 @@ export function validateProfile(input) {
   const commuteKm = Number(input.commuteKm);
   const budgets = new Set(["zero", "low", "mid", "flex"]);
   const modes = new Set(["car", "scooter", "bus", "metro", "walk", "remote"]);
+  const commitments = new Set(["school", "work", "errands", "none"]);
   const allowedNeeds = new Set(["children", "olderAdult", "respiratory"]);
   const sensitiveNeeds = Array.isArray(input.sensitiveNeeds)
     ? input.sensitiveNeeds.filter((need) => allowedNeeds.has(need)).slice(0, 3)
     : [];
   if (city.length < 2 || city.length > 60) throw new Error("Enter a city between 2 and 60 characters.");
   if (!Number.isInteger(householdSize) || householdSize < 1 || householdSize > 12) throw new Error("Choose a household size from 1 to 12.");
-  if (![6, 7, 8, 18].includes(walkTime)) throw new Error("Choose a listed walk time.");
+  if (!Number.isInteger(walkTime) || walkTime < 0 || walkTime > 23) throw new Error("Choose a valid outdoor routine hour.");
   if (!Number.isFinite(commuteKm) || commuteKm < 0 || commuteKm > 80) throw new Error("Commute distance must be between 0 and 80 km.");
   if (!budgets.has(input.budget)) throw new Error("Choose a listed household budget.");
   if (!modes.has(input.commuteMode)) throw new Error("Choose a listed commute mode.");
+  const fixedCommitment = commitments.has(input.fixedCommitment)
+    ? input.fixedCommitment
+    : input.schoolFixed === true
+      ? "school"
+      : "none";
   return {
     city,
     householdSize,
@@ -290,7 +316,8 @@ export function validateProfile(input) {
     commuteKm,
     budget: input.budget,
     commuteMode: input.commuteMode,
-    schoolFixed: input.schoolFixed === true,
+    fixedCommitment,
+    schoolFixed: fixedCommitment === "school",
     sensitiveNeeds,
   };
 }
@@ -308,7 +335,6 @@ export function validateAir(input) {
   const current = Number(input.current);
   if (!Number.isFinite(current) || current < 0 || current > 5000) throw new Error("The current forecast value was not usable.");
   const cityName = String(input.city?.name || "").trim().slice(0, 60);
-  const demo = input.demo === true;
   const country = String(input.city?.country || "").trim().slice(0, 80);
   let timezone = String(input.city?.timezone || "UTC").trim().slice(0, 80) || "UTC";
   try {
@@ -325,10 +351,9 @@ export function validateAir(input) {
     },
     current: Math.round(current * 10) / 10,
     hourly,
-    source: demo ? "Illustrative sample · not live data" : "Open-Meteo · CAMS model forecast",
+    source: "Open-Meteo · CAMS model forecast",
     sourceUrl: "https://open-meteo.com/en/docs/air-quality-api",
     fetchedAt: typeof input.fetchedAt === "string" ? input.fetchedAt.slice(0, 40) : new Date().toISOString(),
     coverageNote: "Regional model grid; not a street-level monitor.",
-    demo,
   };
 }
