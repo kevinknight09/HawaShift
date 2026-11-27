@@ -202,6 +202,7 @@ function renderTimeline(hourly, preferredWindow = undefined) {
   points.forEach((point, index) => {
     const slot = document.createElement("div");
     slot.className = "timeline-slot";
+    slot.setAttribute("role", "listitem");
     const value = Number(point.value) || 0;
     const top = document.createElement("span");
     top.className = "timeline-value";

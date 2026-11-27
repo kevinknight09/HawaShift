@@ -3,6 +3,10 @@ const AIR_URL = "https://air-quality-api.open-meteo.com/v1/air-quality";
 const CACHE_TTL_MS = 10 * 60 * 1000;
 const airCache = new Map();
 
+export function clearAirCache() {
+  airCache.clear();
+}
+
 function cleanCity(value) {
   if (typeof value !== "string") throw new Error("Enter a city or nearby area.");
   const city = value.trim().replace(/\s+/g, " ");

@@ -7,7 +7,7 @@ import { createPlan, refinePlan, validateAir, validateProfile } from "./plan.mjs
 
 const ROOT = resolve(fileURLToPath(new URL("..", import.meta.url)));
 const CLIENT_DIR = resolve(ROOT, "client");
-const PORT = Number(process.env.PORT || 4173);
+const DEFAULT_PORT = Number(process.env.PORT || 4173);
 const MAX_BODY = 18 * 1024;
 const MIME = Object.freeze({
   ".html": "text/html; charset=utf-8",
@@ -16,7 +16,6 @@ const MIME = Object.freeze({
   ".svg": "image/svg+xml",
   ".json": "application/json; charset=utf-8",
 });
-const requestCounts = new Map();
 
 function sendJson(response, status, payload) {
   response.writeHead(status, {
@@ -35,7 +34,7 @@ function setSecurityHeaders(response) {
   response.setHeader("cross-origin-opener-policy", "same-origin");
 }
 
-function limited(request, response) {
+function limited(request, response, requestCounts) {
   const now = Date.now();
   const key = request.socket.remoteAddress || "unknown";
   const current = requestCounts.get(key);
@@ -112,116 +111,132 @@ async function serveStatic(request, response, pathname) {
     response.end(file);
   } catch {
     if (request.method === "GET" && !pathname.startsWith("/api/") && extname(pathname) === "") {
-      const index = await readFile(resolve(CLIENT_DIR, "index.html"));
-      response.writeHead(200, { "content-type": MIME[".html"], "cache-control": "no-cache" });
-      response.end(index);
-      return;
+      try {
+        const index = await readFile(resolve(CLIENT_DIR, "index.html"));
+        response.writeHead(200, { "content-type": MIME[".html"], "cache-control": "no-cache" });
+        response.end(index);
+        return;
+      } catch {
+        sendJson(response, 404, { error: { code: "NOT_FOUND", message: "That page was not found." } });
+        return;
+      }
     }
     sendJson(response, 404, { error: { code: "NOT_FOUND", message: "That page was not found." } });
   }
 }
 
-const server = createServer(async (request, response) => {
-  setSecurityHeaders(response);
-  const url = new URL(request.url || "/", "http://localhost");
-  const method = request.method || "GET";
+export function createRequestHandler() {
+  const requestCounts = new Map();
+  return async (request, response) => {
+    setSecurityHeaders(response);
+    const url = new URL(request.url || "/", "http://localhost");
+    const method = request.method || "GET";
 
-  if (url.pathname === "/api/health" && method === "GET") {
-    sendJson(response, 200, {
-      status: "ok",
-      geminiConfigured: Boolean(process.env.GEMINI_API_KEY),
-      model: process.env.GEMINI_MODEL || "gemini-3.8-flash",
-    });
-    return;
-  }
-
-  if (url.pathname === "/api/air" && method === "GET") {
-    if (limited(request, response)) return;
-    try {
-      const air = await fetchAirForCity(url.searchParams.get("city"));
-      sendJson(response, 200, air);
-    } catch (error) {
-      sendJson(response, 502, {
-        error: {
-          code: "AIR_DATA_UNAVAILABLE",
-          message: error instanceof Error ? error.message : "Air data is unavailable right now.",
-        },
+    if (url.pathname === "/api/health" && method === "GET") {
+      sendJson(response, 200, {
+        status: "ok",
+        geminiConfigured: Boolean(process.env.GEMINI_API_KEY),
+        model: process.env.GEMINI_MODEL || "gemini-3.8-flash",
       });
+      return;
     }
-    return;
-  }
 
-  if ((url.pathname === "/api/plan" || url.pathname === "/api/refine") && method === "POST") {
-    if (limited(request, response)) return;
-    try {
-      const input = await readJson(request);
-      const profile = validateProfile(input.profile);
-      const air = validateAir(input.air);
-
-      if (url.pathname === "/api/plan") {
-        const result = await createPlan(air, profile, input.useGemini === true);
-        sendJson(response, 200, result);
-        return;
-      }
-
-      const plan = validatePlanContext(input);
-      const question = typeof input.question === "string" ? input.question.slice(0, 280) : "";
-      if (input.useGemini !== true) {
-        sendJson(response, 200, {
-          mode: "local",
-          answer: "Select the Gemini option in your household setup to send this question and plan context for a tailored response. Your profile stays in this browser session.",
-        });
-        return;
-      }
-      if (question.trim().length < 3) throw new Error("Add a little more detail about what cannot change.");
-      let answer;
+    if (url.pathname === "/api/air" && method === "GET") {
+      if (limited(request, response, requestCounts)) return;
       try {
-        answer = await refinePlan(question, air, profile, plan);
-      } catch {
-        sendJson(response, 200, {
-          mode: "local",
-          answer: "Gemini is temporarily unavailable. Your local plan is still ready; try the question again later.",
+        const air = await fetchAirForCity(url.searchParams.get("city"));
+        sendJson(response, 200, air);
+      } catch (error) {
+        sendJson(response, 502, {
+          error: {
+            code: "AIR_DATA_UNAVAILABLE",
+            message: error instanceof Error ? error.message : "Air data is unavailable right now.",
+          },
         });
-        return;
       }
-      if (!answer) {
-        const message = process.env.GEMINI_API_KEY
-          ? "Gemini could not return a usable answer. Your local plan is still available; try a simpler question."
-          : "Gemini is not configured on this server yet. The plan above is still available from the local guide; add a Gemini key on the server to ask it follow-up questions.";
-        sendJson(response, 200, { mode: "local", answer: message });
-        return;
-      }
-      sendJson(response, 200, { mode: "gemini", answer });
-    } catch (error) {
-      sendJson(response, 400, {
-        error: {
-          code: "INVALID_REQUEST",
-          message: error instanceof Error ? error.message : "That request could not be processed.",
-        },
-      });
+      return;
     }
-    return;
-  }
 
-  if (url.pathname.startsWith("/api/")) {
-    sendJson(response, 404, { error: { code: "NOT_FOUND", message: "That API route was not found." } });
-    return;
-  }
+    if ((url.pathname === "/api/plan" || url.pathname === "/api/refine") && method === "POST") {
+      if (limited(request, response, requestCounts)) return;
+      try {
+        const input = await readJson(request);
+        const profile = validateProfile(input.profile);
+        const air = validateAir(input.air);
 
-  if (method !== "GET" && method !== "HEAD") {
-    sendJson(response, 405, { error: { code: "METHOD_NOT_ALLOWED", message: "Use GET for pages." } });
-    return;
-  }
-  await serveStatic(request, response, url.pathname);
-});
+        if (url.pathname === "/api/plan") {
+          const result = await createPlan(air, profile, input.useGemini === true);
+          sendJson(response, 200, result);
+          return;
+        }
 
-server.listen(PORT, "0.0.0.0", () => {
-  console.log("HawaShift running on http://localhost:" + PORT);
-  console.log("Gemini planning: " + (process.env.GEMINI_API_KEY ? "configured" : "local guide fallback"));
-});
+        const plan = validatePlanContext(input);
+        const question = typeof input.question === "string" ? input.question.slice(0, 280) : "";
+        if (input.useGemini !== true) {
+          sendJson(response, 200, {
+            mode: "local",
+            answer: "Select the Gemini option in your household setup to send this question and plan context for a tailored response. Your profile stays in this browser session.",
+          });
+          return;
+        }
+        if (question.trim().length < 3) throw new Error("Add a little more detail about what cannot change.");
+        let answer;
+        try {
+          answer = await refinePlan(question, air, profile, plan);
+        } catch {
+          sendJson(response, 200, {
+            mode: "local",
+            answer: "Gemini is temporarily unavailable. Your local plan is still ready; try the question again later.",
+          });
+          return;
+        }
+        if (!answer) {
+          const message = process.env.GEMINI_API_KEY
+            ? "Gemini could not return a usable answer. Your local plan is still available; try a simpler question."
+            : "Gemini is not configured on this server yet. The plan above is still available from the local guide; add a Gemini key on the server to ask it follow-up questions.";
+          sendJson(response, 200, { mode: "local", answer: message });
+          return;
+        }
+        sendJson(response, 200, { mode: "gemini", answer });
+      } catch (error) {
+        sendJson(response, 400, {
+          error: {
+            code: "INVALID_REQUEST",
+            message: error instanceof Error ? error.message : "That request could not be processed.",
+          },
+        });
+      }
+      return;
+    }
 
-function shutdown() {
-  server.close(() => process.exit(0));
+    if (url.pathname.startsWith("/api/")) {
+      sendJson(response, 404, { error: { code: "NOT_FOUND", message: "That API route was not found." } });
+      return;
+    }
+
+    if (method !== "GET" && method !== "HEAD") {
+      sendJson(response, 405, { error: { code: "METHOD_NOT_ALLOWED", message: "Use GET for pages." } });
+      return;
+    }
+    await serveStatic(request, response, url.pathname);
+  };
 }
-process.on("SIGINT", shutdown);
-process.on("SIGTERM", shutdown);
+
+export function createAppServer() {
+  return createServer(createRequestHandler());
+}
+
+const isEntrypoint = process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url);
+if (isEntrypoint) {
+  const server = createAppServer();
+  server.listen(DEFAULT_PORT, "0.0.0.0", () => {
+    console.log("HawaShift running on http://localhost:" + DEFAULT_PORT);
+    console.log("Gemini planning: " + (process.env.GEMINI_API_KEY ? "configured" : "local guide fallback"));
+  });
+
+  function shutdown() {
+    server.close(() => process.exit(0));
+  }
+  process.on("SIGINT", shutdown);
+  process.on("SIGTERM", shutdown);
+}

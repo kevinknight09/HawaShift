@@ -1,9 +1,10 @@
+
 import { calculateImpact, formatPlanTime } from "./impact.mjs";
 
 const ACTION_CATEGORIES = new Set(["routine", "fixed", "commute", "home"]);
 const MAX_ACTIONS = 4;
 
-function makeLocalPlan(air, profile, impact) {
+export function makeLocalPlan(air, profile, impact) {
   const window = impact.bestWindow;
   const sensitive = Array.isArray(profile.sensitiveNeeds) && profile.sensitiveNeeds.length > 0;
   const budgetText = {
@@ -13,15 +14,25 @@ function makeLocalPlan(air, profile, impact) {
     flex: "your stated budget",
   }[profile.budget] || "your stated budget";
 
+  const severeWindow = window && window.meanPm25 >= 130;
   const routine = window && impact.baselinePm25 !== null && impact.exposurePercent > 0
-    ? {
-        category: "routine",
-        tag: "FLEXIBLE ROUTINE",
-        headline: "Move the optional walk toward " + formatPlanTime(window.start, air.city?.timezone),
-        detail: "This two-hour model window averages " + window.meanPm25 + " µg/m³ versus " + impact.baselinePm25 + " µg/m³ near your usual start. It is a lower forecast period, not a safe-air guarantee.",
-        badge: "LOWER MODEL WINDOW",
-        tone: "green",
-      }
+    ? severeWindow
+      ? {
+          category: "routine",
+          tag: "FLEXIBLE ROUTINE",
+          headline: "Keep the walk indoors; avoid peak hours if going out",
+          detail: "Even the lowest two-hour daytime window averages " + window.meanPm25 + " µg/m³ (versus " + impact.baselinePm25 + " µg/m³ near your usual start). During very high modeled periods, moving flexible exercise indoors avoids extra exposure; if you must step out, prefer " + formatPlanTime(window.start, air.city?.timezone) + ".",
+          badge: "VERY HIGH · INDOORS FIRST",
+          tone: "amber",
+        }
+      : {
+          category: "routine",
+          tag: "FLEXIBLE ROUTINE",
+          headline: "Move the optional walk toward " + formatPlanTime(window.start, air.city?.timezone),
+          detail: "This two-hour model window averages " + window.meanPm25 + " µg/m³ versus " + impact.baselinePm25 + " µg/m³ near your usual start. It is a lower forecast period, not a safe-air guarantee.",
+          badge: "LOWER MODEL WINDOW",
+          tone: "green",
+        }
     : {
         category: "routine",
         tag: "FLEXIBLE ROUTINE",
@@ -108,7 +119,7 @@ function makeLocalPlan(air, profile, impact) {
   return { summary, intro, actions: [routine, fixed, commute, home] };
 }
 
-function validModelPlan(value, localPlan) {
+export function validModelPlan(value, localPlan) {
   if (!value || typeof value !== "object") return null;
   if (typeof value.summary !== "string" || typeof value.intro !== "string" || !Array.isArray(value.actions)) return null;
   if (value.summary.length > 150 || value.intro.length > 320 || value.actions.length !== localPlan.actions.length) return null;

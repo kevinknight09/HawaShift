@@ -21,7 +21,7 @@ HawaShift combines a location-specific outdoor PM₂.₅ forecast, household sch
 | Code Quality | Small dependency-free server modules, named impact calculations, input bounds, and architecture/methodology documentation. |
 | Security | Server-only Gemini key, explicit opt-in, CSP/security headers, strict JSON bounds, safe DOM text insertion, bounded in-memory rate limiting, no persistence. |
 | Efficiency | No client framework or runtime dependencies, one forecast cache per city for ten minutes, bounded forecast payloads, local deterministic fallback. |
-| Testing | `npm run check` provides Node syntax checks. The walkthrough above is the manual acceptance path for data, consent, location, fallback, and responsive keyboard use. |
+| Testing | `npm run check` runs Node syntax checks and `npm test` runs automated `node --test` unit and HTTP integration tests across `impact.mjs`, `plan.mjs`, `air-quality.mjs`, and `index.mjs`. The walkthrough above remains the manual acceptance path for responsive keyboard use and live upstream providers. |
 | Accessibility | Semantic sections and headings, skip link, labels, keyboard focus styles, live feedback, chart text alternatives, reduced-motion support, and responsive layout. |
 | Problem Statement Alignment | Location-aware forecast, routines, indoor actions, alternatives, household adaptation, community invite, and transparent impact estimates. |
 
