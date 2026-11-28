@@ -10,8 +10,8 @@
     />
     <title>HawaShift — a clearer plan for today</title>
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-    <link rel="stylesheet" href="/styles.css" />
-    <script type="module" src="/app.js"></script>
+    <link rel="stylesheet" href="/styles.css?v=3" />
+    <script type="module" src="/app.js?v=3"></script>
   </head>
   <body>
     <a class="skip-link" href="#main-content">Skip to today’s plan</a>
@@ -76,9 +76,11 @@
               </label>
             </div>
             <form class="manual-city-form" id="manualCityForm">
-              <label class="sr-only" for="manualCityInput">Or type another city</label>
-              <input id="manualCityInput" list="majorCitiesList" maxlength="60" placeholder="Or type another city (e.g. Surat, Nagpur)…" />
-              <button class="button button-dark" type="submit" id="manualCitySubmit">Load forecast</button>
+              <label class="manual-city-label" for="manualCityInput">Your city not in the list? Enter it manually</label>
+              <div class="manual-city-row">
+                <input id="manualCityInput" maxlength="60" placeholder="Enter your city (e.g. Surat, Nagpur)…" />
+                <button class="button button-dark" type="submit" id="manualCitySubmit">Load forecast</button>
+              </div>
             </form>
             <datalist id="majorCitiesList"></datalist>
           </div>
@@ -101,6 +103,10 @@
               <span class="reading-label">PM₂.₅ model estimate</span>
               <div class="reading-number"><strong id="pmValue">—</strong><span>µg/m³</span></div>
               <span class="air-level" id="pmLevel"><span class="level-dot"></span> Allow location or enter a city</span>
+              <div class="air-submetrics" id="airSubmetrics">
+                <span class="submetric-pill" id="aqiBadge">US AQI: —</span>
+                <span class="submetric-pill" id="pm10Badge">PM₁₀: —</span>
+              </div>
             </div>
             <div class="air-orbit" aria-hidden="true">
               <div class="orbit orbit-one"></div><div class="orbit orbit-two"></div>
@@ -118,7 +124,7 @@
           <div class="chart-times" aria-hidden="true"><span>—</span><span>—</span><span>—</span><span>—</span></div>
           <div class="air-card-foot">
             <span class="freshness" id="forecastStamp">No forecast loaded yet</span>
-            <a class="source-link" href="https://open-meteo.com/en/docs/air-quality-api" target="_blank" rel="noreferrer">PM₂.₅ model · not official AQI ↗</a>
+            <a class="source-link" href="https://open-meteo.com/en/docs/air-quality-api" target="_blank" rel="noreferrer">CAMS model · US AQI &amp; PM₂.₅ ↗</a>
           </div>
         </article>
       </section>
@@ -203,6 +209,15 @@
                 </div>
               </fieldset>
               <label class="field">
+                <span>Flexible outdoor activity</span>
+                <select id="outdoorActivity" name="outdoorActivity">
+                  <option value="walk" selected>Morning walk / exercise</option>
+                  <option value="play">Kids’ playtime / park</option>
+                  <option value="sun">Winter sun sitting (dhoop)</option>
+                  <option value="market">Local market / mandi run</option>
+                </select>
+              </label>
+              <label class="field">
                 <span>Usual flexible outdoor time</span>
                 <select id="walkTime" name="walkTime">
                   <option value="5">5:00 AM</option><option value="6">6:00 AM</option><option value="7" selected>7:00 AM</option><option value="8">8:00 AM</option><option value="9">9:00 AM</option><option value="10">10:00 AM</option><option value="16">4:00 PM</option><option value="17">5:00 PM</option><option value="18">6:00 PM</option><option value="19">7:00 PM</option><option value="20">8:00 PM</option>
@@ -227,6 +242,24 @@
                   <option value="none">No fixed anchor today (flexible)</option>
                 </select>
               </label>
+              <fieldset class="field field-wide sensitivities">
+                <legend>Home &amp; winter habits that apply</legend>
+                <div class="choice-chips">
+                  <label class="choice-chip"><input type="checkbox" id="habitIncense" /><span>Daily agarbatti / dhoop / diya</span></label>
+                  <label class="choice-chip"><input type="checkbox" id="habitNoExhaust" /><span>No kitchen chimney / exhaust</span></label>
+                  <label class="choice-chip"><input type="checkbox" id="habitDrySweep" /><span>Dry sweeping (jhadu) daily</span></label>
+                  <label class="choice-chip"><input type="checkbox" id="habitRoadFacing" /><span>Main-road facing / lower floor</span></label>
+                  <label class="choice-chip"><input type="checkbox" id="habitHeater" /><span>Room heater / closed rooms</span></label>
+                </div>
+              </fieldset>
+              <fieldset class="field field-wide sensitivities">
+                <legend>Realistic low-emission options nearby</legend>
+                <div class="choice-chips">
+                  <label class="choice-chip"><input type="checkbox" id="optMetro" /><span>Metro / local rail nearby</span></label>
+                  <label class="choice-chip"><input type="checkbox" id="optCarpool" /><span>School / neighbour carpool</span></label>
+                  <label class="choice-chip"><input type="checkbox" id="optShortErrands" /><span>Local errands under 2 km</span></label>
+                </div>
+              </fieldset>
             </div>
             <div class="privacy-disclosure">
               <span class="privacy-lock" aria-hidden="true"><svg viewBox="0 0 20 20"><rect x="4.5" y="8.5" width="11" height="8" rx="2"/><path d="M7 8.5V6a3 3 0 0 1 6 0v2.5"/></svg></span>

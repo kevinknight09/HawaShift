@@ -109,6 +109,21 @@ test("POST /api/plan and POST /api/refine validate payloads, enforce body limit,
   const refineBody = await refineNoConsent.json();
   assert.equal(refineBody.mode, "local");
   assert.match(refineBody.answer, /Select the Gemini option/i);
+
+  const refineOffTopic = await app.request("/api/refine", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({
+      ...samplePayload(),
+      plan: planBody.plan,
+      useGemini: true,
+      question: "Write a Python script to sort numbers",
+    }),
+  });
+  assert.equal(refineOffTopic.status, 200);
+  const offTopicBody = await refineOffTopic.json();
+  assert.equal(offTopicBody.mode, "local");
+  assert.match(offTopicBody.answer, /only answer questions about today’s air-quality plan/i);
 });
 
 test("GET /api/air supports coordinate lookups", async (t) => {
@@ -127,7 +142,7 @@ test("GET /api/air supports coordinate lookups", async (t) => {
       ok: true,
       json: async () => ({
         timezone: "Asia/Kolkata",
-        current: { pm2_5: 72 },
+        current: { pm2_5: 72, pm10: 110.3, us_aqi: 160 },
         hourly: {
           time: Array.from({ length: 12 }, (_, index) => nowSec + index * 3600),
           pm2_5: Array.from({ length: 12 }, () => 70),
@@ -141,6 +156,8 @@ test("GET /api/air supports coordinate lookups", async (t) => {
   const body = await airRes.json();
   assert.equal(body.city.name, "Mumbai");
   assert.equal(body.current, 72);
+  assert.equal(body.currentPm10, 110.3);
+  assert.equal(body.currentUsAqi, 160);
 });
 
 test("API rate limiter enforces 16 requests per minute", async () => {

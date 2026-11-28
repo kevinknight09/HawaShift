@@ -54,8 +54,13 @@ test("calculateImpact picks lowest 2-hour daytime window and computes exposure r
   assert.equal(impact.exposurePercent, 58);
   assert.equal(impact.exposureDelta, 93.3);
   assert.equal(impact.walkMinutes, 20);
+  assert.ok(impact.range24h);
+  assert.equal(impact.range24h.minPm25, 60);
+  assert.equal(impact.range24h.maxPm25, 160);
   // Car (139.52 / 1.5 = 93.0133) - Bus (787.72 / 25 = 31.5088) = 61.5045 g/km * 10 km = 0.615 kg
   assert.equal(impact.emissionsKg, 0.615);
+  assert.equal(impact.privateKg, 0.93);
+  assert.equal(impact.busKg, 0.315);
 });
 
 test("calculateImpact shows negative CO2 difference when switching two-wheeler to bus", () => {

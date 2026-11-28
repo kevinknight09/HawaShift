@@ -35,9 +35,14 @@ function dateOrdinal(dateKey) {
   return Date.parse(dateKey + "T00:00:00Z");
 }
 
+export function formatClockTime(value, timezone) {
+  const date = new Date(value);
+  return new Intl.DateTimeFormat("en-IN", { timeZone: timezone || "UTC", hour: "numeric", minute: "2-digit" }).format(date);
+}
+
 export function formatPlanTime(value, timezone) {
   const date = new Date(value);
-  const time = new Intl.DateTimeFormat("en-IN", { timeZone: timezone || "UTC", hour: "numeric", minute: "2-digit" }).format(date);
+  const time = formatClockTime(value, timezone);
   const today = localDate(Date.now(), timezone);
   const target = localDate(date, timezone);
   const dayDifference = (dateOrdinal(target) - dateOrdinal(today)) / 86400000;
@@ -86,6 +91,29 @@ function bestDaylightWindow(hourly, timezone, targetDate) {
   return best;
 }
 
+function summarizeUpcomingDay(hourly) {
+  if (!Array.isArray(hourly) || hourly.length === 0) return null;
+  const now = Date.now();
+  const future = hourly
+    .map((point) => ({ time: point.time, value: Number(point.value), timestamp: Date.parse(point.time) }))
+    .filter((point) => Number.isFinite(point.value) && Number.isFinite(point.timestamp) && point.timestamp >= now)
+    .slice(0, 24);
+  if (future.length === 0) return null;
+
+  let min = future[0];
+  let max = future[0];
+  for (const point of future) {
+    if (point.value < min.value) min = point;
+    if (point.value > max.value) max = point;
+  }
+  return {
+    minPm25: Math.round(min.value * 10) / 10,
+    minTime: min.time,
+    maxPm25: Math.round(max.value * 10) / 10,
+    peakTime: max.time,
+  };
+}
+
 function privateVehicleMode(mode) {
   if (mode === "car") return "car";
   if (mode === "scooter") return "twoWheeler";
@@ -105,6 +133,8 @@ export function calculateImpact(air, profile) {
   }
 
   let emissionsKg = null;
+  let privateKg = null;
+  let busKg = null;
   let emissionsNote = "Choose a private motor commute to compare with the bus estimate.";
   const mode = privateVehicleMode(profile.commuteMode);
   const distance = Number(profile.commuteKm);
@@ -113,12 +143,16 @@ export function calculateImpact(air, profile) {
     const factor = INDIA_MODE_FACTORS;
     const privatePerPassengerKm = factor[mode] / factor.occupants[mode];
     const busPerPassengerKm = factor.bus / factor.occupants.bus;
+    privateKg = Math.round(((privatePerPassengerKm * distance) / 1000) * 1000) / 1000;
+    busKg = Math.round(((busPerPassengerKm * distance) / 1000) * 1000) / 1000;
     const savedGrams = (privatePerPassengerKm - busPerPassengerKm) * distance;
     emissionsKg = Math.round((savedGrams / 1000) * 1000) / 1000;
     emissionsNote = "One-way comparison; default occupancy: 1.5 people per car, 1.2 per two-wheeler, 25 per bus.";
   } else if (mode && Number.isFinite(distance) && distance > 0 && !isIndia) {
     emissionsNote = "Commute estimate unavailable: the published mode factors in this prototype are specific to India.";
   }
+
+  const range24h = summarizeUpcomingDay(air?.hourly);
 
   return {
     baselinePm25: baseline ? baseline.value : null,
@@ -127,9 +161,12 @@ export function calculateImpact(air, profile) {
       end: window.end,
       meanPm25: Math.round(window.mean * 10) / 10,
     } : null,
+    range24h,
     exposurePercent,
     exposureDelta: exposureDelta === null ? null : Math.round(exposureDelta * 10) / 10,
     emissionsKg,
+    privateKg,
+    busKg,
     emissionsNote,
     emissionsSource: INDIA_MODE_FACTORS.source,
     walkMinutes: 20,

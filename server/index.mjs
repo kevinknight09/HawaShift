@@ -7,7 +7,7 @@ import { serve } from "@hono/node-server";
 import { getConnInfo } from "@hono/node-server/conninfo";
 import { serveStatic } from "@hono/node-server/serve-static";
 import { fetchAirForCity, fetchAirForCoords, listMajorIndiaLocations } from "./air-quality.mjs";
-import { createPlan, refinePlan, validateAir, validateProfile } from "./plan.mjs";
+import { checkRefineQuestion, createPlan, refinePlan, validateAir, validateProfile } from "./plan.mjs";
 
 const ROOT = resolve(fileURLToPath(new URL("..", import.meta.url)));
 const CLIENT_DIR = resolve(ROOT, "client");
@@ -20,12 +20,13 @@ function validatePlanContext(input) {
     throw new Error("Generate a plan before asking a follow-up.");
   }
   return {
-    summary: plan.summary.slice(0, 150),
-    intro: String(plan.intro || "").slice(0, 320),
+    summary: plan.summary.slice(0, 160),
+    intro: String(plan.intro || "").slice(0, 340),
     actions: plan.actions.map((action) => ({
       category: String(action.category || "").slice(0, 20),
       headline: String(action.headline || "").slice(0, 100),
-      detail: String(action.detail || "").slice(0, 360),
+      detail: String(action.detail || "").slice(0, 600),
+      tip: String(action.tip || "").slice(0, 260),
     })),
   };
 }
@@ -117,7 +118,7 @@ export function createApp({ serveClient = true } = {}) {
     return c.json({
       status: "ok",
       geminiConfigured: Boolean(process.env.GEMINI_API_KEY),
-      model: process.env.GEMINI_MODEL || "gemini-3.8-flash",
+      model: (process.env.GEMINI_MODEL || "").trim() || "gemini-3.1-flash-lite",
     });
   });
 
@@ -186,6 +187,11 @@ export function createApp({ serveClient = true } = {}) {
         throw new Error("Add a little more detail about what cannot change.");
       }
 
+      const guardrail = checkRefineQuestion(question);
+      if (!guardrail.allowed) {
+        return c.json({ mode: "local", answer: guardrail.reason });
+      }
+
       let answer;
       try {
         answer = await refinePlan(question, air, profile, plan);
@@ -224,7 +230,7 @@ export function createApp({ serveClient = true } = {}) {
       }
       await next();
       const ext = extname(c.req.path).toLowerCase();
-      c.header("cache-control", !ext || ext === ".html" ? "no-cache" : "public, max-age=300");
+      c.header("cache-control", !ext || ext === ".html" || ext === ".css" || ext === ".js" ? "no-cache" : "public, max-age=300");
     });
 
     app.use("*", serveStatic({ root: CLIENT_DIR }));

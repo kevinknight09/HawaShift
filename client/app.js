@@ -100,6 +100,15 @@ function scaledHeight(value, maximum) {
   return Math.max(1, Math.min(10, Math.round((value / Math.max(maximum, 1)) * 9) + 1));
 }
 
+function usAqiBand(aqi) {
+  if (aqi <= 50) return "Good";
+  if (aqi <= 100) return "Moderate";
+  if (aqi <= 150) return "Sensitive";
+  if (aqi <= 200) return "Unhealthy";
+  if (aqi <= 300) return "Very unhealthy";
+  return "Hazardous";
+}
+
 function renderEmptyAir(subtitle = "Allow location or enter a city") {
   state.air = null;
   byId("cityName").textContent = "Your location";
@@ -112,6 +121,9 @@ function renderEmptyAir(subtitle = "Allow location or enter a city") {
   levelDot.className = "level-dot";
   levelDot.setAttribute("aria-hidden", "true");
   level.replaceChildren(levelDot, document.createTextNode(subtitle));
+  if (byId("aqiBadge")) byId("aqiBadge").textContent = "US AQI: —";
+  if (byId("pm10Badge")) byId("pm10Badge").textContent = "PM₁₀: —";
+  if (byId("airTrend")) byId("airTrend").textContent = "⋯";
   byId("forecastStamp").textContent = "No forecast loaded yet";
   byId("timelineSource").textContent = "CAMS forecast · waiting for location";
   byId("airChart").setAttribute("aria-label", "Hourly PM2.5 forecast chart, waiting for location or city");
@@ -143,6 +155,21 @@ function renderAir(air, preferredWindow = null, usePlanWindow = false) {
   levelDot.className = "level-dot";
   levelDot.setAttribute("aria-hidden", "true");
   level.replaceChildren(levelDot, document.createTextNode(band.label));
+  if (byId("aqiBadge")) {
+    byId("aqiBadge").textContent = Number.isFinite(air.currentUsAqi)
+      ? "US AQI: " + air.currentUsAqi + " · " + usAqiBand(air.currentUsAqi)
+      : "US AQI: —";
+  }
+  if (byId("pm10Badge")) {
+    byId("pm10Badge").textContent = Number.isFinite(air.currentPm10)
+      ? "PM₁₀: " + numberFormat.format(air.currentPm10) + " µg/m³"
+      : "PM₁₀: —";
+  }
+  const windowForTrend = preferredWindow || bestWindowFrom(air.hourly);
+  if (byId("airTrend")) {
+    const windowMean = windowForTrend ? (windowForTrend.meanPm25 ?? windowForTrend.mean) : null;
+    byId("airTrend").textContent = windowMean !== null && windowMean < air.current ? "↘" : "→";
+  }
   byId("forecastStamp").textContent = "Retrieved " + formatTime(air.fetchedAt);
   byId("timelineSource").textContent = "CAMS forecast · regional model grid";
   byId("airChart").setAttribute(
@@ -266,6 +293,7 @@ function currentProfile() {
     city: byId("cityInput").value.trim(),
     householdSize: Number(byId("householdSize").value),
     budget: byId("budget").value,
+    outdoorActivity: byId("outdoorActivity")?.value || "walk",
     walkTime: Number(byId("walkTime").value),
     commuteMode: byId("commuteMode").value,
     commuteKm: Number.isFinite(commuteKm) ? commuteKm : 0,
@@ -275,6 +303,18 @@ function currentProfile() {
       byId("hasChildren").checked ? "children" : null,
       byId("hasOlderAdult").checked ? "olderAdult" : null,
       byId("hasRespiratory").checked ? "respiratory" : null,
+    ].filter(Boolean),
+    homeHabits: [
+      byId("habitIncense")?.checked ? "incense" : null,
+      byId("habitNoExhaust")?.checked ? "noExhaust" : null,
+      byId("habitDrySweep")?.checked ? "drySweep" : null,
+      byId("habitRoadFacing")?.checked ? "roadFacing" : null,
+      byId("habitHeater")?.checked ? "heaterClosed" : null,
+    ].filter(Boolean),
+    transitOptions: [
+      byId("optMetro")?.checked ? "metro" : null,
+      byId("optCarpool")?.checked ? "carpool" : null,
+      byId("optShortErrands")?.checked ? "shortErrands" : null,
     ].filter(Boolean),
   };
 }
@@ -287,7 +327,13 @@ function updateProfileSummary(profile) {
       ? "1 person, personal plan"
       : size + " people, one shared plan";
   }
-  byId("walkSchedule").textContent = "Flexible · " + formatSelectedHour(profile.walkTime);
+  const activityNames = {
+    walk: "Walk / exercise",
+    play: "Kids’ play",
+    sun: "Winter sun",
+    market: "Market run",
+  };
+  byId("walkSchedule").textContent = (activityNames[profile.outdoorActivity] || "Flexible") + " · " + formatSelectedHour(profile.walkTime);
   const fixedLabels = {
     school: ["School run", "Fixed daily anchor"],
     work: ["Work / shift", "Fixed daily anchor"],
@@ -328,7 +374,7 @@ function updateProfileSummary(profile) {
   if (commuteDistances) commuteDistances.setAttribute("aria-label", "One-way commute distance in kilometres");
 }
 
-function makeActionCard(action, impact) {
+function makeActionCard(action, impact, planMode = "local") {
   const icons = { routine: "◷", fixed: "⌁", commute: "⌖", home: "⌂" };
   const tones = { routine: "icon-clock", fixed: "icon-route", commute: "icon-route", home: "icon-home" };
   const card = document.createElement("article");
@@ -349,6 +395,28 @@ function makeActionCard(action, impact) {
   heading.textContent = action.headline;
   const detail = document.createElement("p");
   detail.textContent = action.detail;
+  body.append(heading, detail);
+
+  if (Array.isArray(action.steps) && action.steps.length > 0) {
+    const stepsList = document.createElement("ul");
+    stepsList.className = "action-steps";
+    action.steps.forEach((stepText) => {
+      const li = document.createElement("li");
+      li.textContent = stepText;
+      stepsList.append(li);
+    });
+    body.append(stepsList);
+  }
+
+  if (action.tip) {
+    const tipBox = document.createElement("p");
+    tipBox.className = "action-tip" + (planMode === "gemini" ? " action-tip-gemini" : "");
+    const tipPrefix = document.createElement("strong");
+    tipPrefix.textContent = planMode === "gemini" ? "✦ Gemini note: " : "Practical note: ";
+    tipBox.append(tipPrefix, document.createTextNode(action.tip));
+    body.append(tipBox);
+  }
+
   const meta = document.createElement("div");
   meta.className = "action-meta";
   const cost = document.createElement("span");
@@ -358,7 +426,13 @@ function makeActionCard(action, impact) {
   source.className = "meta-tag meta-muted";
   source.textContent = "Regional forecast";
   meta.append(cost, source);
-  body.append(heading, detail, meta);
+  if (action.category === "routine" && impact?.bestWindow && impact?.exposurePercent > 0) {
+    const best = document.createElement("span");
+    best.className = "meta-tag";
+    best.textContent = "Best window: " + formatWindowTime(impact.bestWindow.start) + "–" + formatTime(impact.bestWindow.end);
+    meta.append(best);
+  }
+  body.append(meta);
 
   const badge = document.createElement("span");
   badge.className = "action-impact " + (action.category === "fixed" ? "impact-neutral" : action.category === "home" ? "impact-home" : "");
@@ -391,7 +465,7 @@ function renderPlan(result) {
   mode.replaceChildren(spark, document.createTextNode(result.mode === "gemini" ? "Gemini tailored" : "Local guide"));
 
   const list = byId("actionList");
-  list.replaceChildren(...result.plan.actions.map((action) => makeActionCard(action, result.impact)));
+  list.replaceChildren(...result.plan.actions.map((action) => makeActionCard(action, result.impact, result.mode)));
   renderImpact(result.impact);
   if (result.air) renderAir(result.air, result.impact.bestWindow, true);
   else updateBestWindow(result.impact.bestWindow, false);
@@ -435,7 +509,10 @@ function renderImpact(impact) {
       ? "India mode factors are not available for this location"
       : "choose a private motor commute to compare";
   }
-  byId("impactFoot").textContent = impact.emissionsNote + " Outdoor proxy uses a 20-minute walk and model values; it is not an inhaled dose or health outcome.";
+  const rangeText = impact.range24h
+    ? " Next 24h range: " + impact.range24h.minPm25 + "–" + impact.range24h.maxPm25 + " µg/m³ (peak " + formatWindowTime(impact.range24h.peakTime) + ")."
+    : "";
+  byId("impactFoot").textContent = impact.emissionsNote + rangeText + " Outdoor proxy uses a 20-minute walk and model values; it is not an inhaled dose or health outcome.";
 }
 
 function markPlanStale() {

@@ -20,7 +20,7 @@ test("fetchAirForCity uses direct lookup for major Indian cities and caches resp
       ok: true,
       json: async () => ({
         timezone: "Asia/Kolkata",
-        current: { pm2_5: 132.46 },
+        current: { pm2_5: 132.46, pm10: 198.24, us_aqi: 191.4 },
         hourly: {
           time: Array.from({ length: 12 }, (_, index) => nowSec + index * 3600),
           pm2_5: Array.from({ length: 12 }, (_, index) => 120 + index),
@@ -33,6 +33,8 @@ test("fetchAirForCity uses direct lookup for major Indian cities and caches resp
   assert.equal(first.city.name, "New Delhi");
   assert.equal(first.city.timezone, "Asia/Kolkata");
   assert.equal(first.current, 132.5);
+  assert.equal(first.currentPm10, 198.2);
+  assert.equal(first.currentUsAqi, 191);
   assert.equal(first.hourly.length, 12);
   assert.equal(calls, 1);
 

@@ -79,11 +79,24 @@ function toForecast(data, city) {
   if (hourly.length < 8) throw new Error("The air data provider returned too few forecast hours.");
 
   const currentFromProvider = Number(data?.current?.pm2_5);
+  const currentPm10Raw = Number(data?.current?.pm10);
+  const currentUsAqiRaw = Number(data?.current?.us_aqi);
+  const hourlyUsAqi = Array.isArray(data?.hourly?.us_aqi) ? data.hourly.us_aqi : [];
   const now = Date.now();
   const currentIndex = hourly.findIndex((point) => Date.parse(point.time) >= now - 60 * 60 * 1000);
+  const fallbackIndex = Math.max(0, currentIndex);
   const current = Number.isFinite(currentFromProvider) && currentFromProvider >= 0
     ? Math.round(currentFromProvider * 10) / 10
-    : hourly[Math.max(0, currentIndex)]?.value;
+    : hourly[fallbackIndex]?.value;
+  const currentPm10 = Number.isFinite(currentPm10Raw) && currentPm10Raw >= 0
+    ? Math.round(currentPm10Raw * 10) / 10
+    : null;
+  const hourlyAqiFallback = Number(hourlyUsAqi[fallbackIndex]);
+  const currentUsAqi = Number.isFinite(currentUsAqiRaw) && currentUsAqiRaw >= 0
+    ? Math.round(currentUsAqiRaw)
+    : Number.isFinite(hourlyAqiFallback) && hourlyAqiFallback >= 0
+      ? Math.round(hourlyAqiFallback)
+      : null;
 
   return {
     city: {
@@ -93,6 +106,8 @@ function toForecast(data, city) {
       timezone: data.timezone || city.timezone || "auto",
     },
     current,
+    currentPm10,
+    currentUsAqi,
     hourly,
     source: "Open-Meteo · CAMS model forecast",
     sourceUrl: "https://open-meteo.com/en/docs/air-quality-api",
@@ -114,8 +129,8 @@ async function fetchForecastAt(latitude, longitude, place) {
   const airParams = new URLSearchParams({
     latitude: String(latitude),
     longitude: String(longitude),
-    current: "pm2_5",
-    hourly: "pm2_5",
+    current: "pm2_5,pm10,us_aqi",
+    hourly: "pm2_5,us_aqi",
     forecast_days: "2",
     timezone: "auto",
     timeformat: "unixtime",
